@@ -1,0 +1,17 @@
+name: Release tag
+concurrency:
+  group: release-tag-${{ github.ref }}
+on:
+  push:
+    branches:
+      - main
+      - initial
+
+jobs:
+  release_tag:
+    name: Release a tag
+    permissions:
+      contents: write
+    uses: ./.github/workflows/reusable_release_tag.yml
+    with:
+      push_major_tag: true
