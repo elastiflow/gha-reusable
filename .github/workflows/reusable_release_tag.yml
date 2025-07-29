@@ -50,13 +50,13 @@ jobs:
           tag_prefix: ${{ inputs.tag_prefix }}
           namespace: ${{ inputs.tag_suffix }}
       - name: Create and push semver tag
-        uses: anothrNick/github-tag-action@v1
+        uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c
         env:
           GITHUB_TOKEN: ${{ secrets.custom_github_token || secrets.GITHUB_TOKEN }}
           CUSTOM_TAG: ${{ steps.semver.outputs.version_tag }}
       - name: Create and push minor tag
         if: ${{ inputs.push_minor_tag }}
-        uses: anothrNick/github-tag-action@v1
+        uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c
         env:
           GITHUB_TOKEN: ${{ secrets.custom_github_token || secrets.GITHUB_TOKEN }}
           FORCE_WITHOUT_CHANGES: true
@@ -64,7 +64,7 @@ jobs:
           CUSTOM_TAG: "${{ inputs.tag_prefix }}${{ steps.semver.outputs.major }}.${{ steps.semver.outputs.minor }}${{ env.TAG_SUFFIX_DELIMITER }}${{ inputs.tag_suffix }}"
       - name: Create and push major tag
         if: ${{ inputs.push_major_tag }}
-        uses: anothrNick/github-tag-action@v1
+        uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c
         env:
           GITHUB_TOKEN: ${{ secrets.custom_github_token || secrets.GITHUB_TOKEN }}
           FORCE_WITHOUT_CHANGES: true

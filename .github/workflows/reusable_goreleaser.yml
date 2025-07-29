@@ -1,0 +1,201 @@
+# Workflow relies on gomplate and goreleaser to build linux packages
+on:
+  workflow_call:
+    inputs:
+      binary:
+        type: string
+        required: true
+        description: Binary to build
+      pkg_name:
+        type: string
+        required: true
+        description: Package name, present in the manifests, seen in the YUM/APT repository
+      pkg_file_name:
+        type: string
+        description: Package file name, may be needed for backwards compatibility
+      pkg_description:
+        type: string
+        required: true
+        description: Package description
+      build_dockerfile:
+        type: string
+        required: true
+        description: Dockerfile to be used for building the packages.
+      build_dockerfile_target:
+        type: string
+        default: artifacter
+        description: Dockerfile target to produce final artifacts
+      build_args:
+        type: string
+        description: |
+          Docker build args, example:
+
+            build_args: |
+              "GORELEASER_ARGS=--snapshot --skip=validate,publish"
+      publish_gh:
+        type: boolean
+        default: false
+        description: Publish to GH releases
+      publish_apt:
+        type: boolean
+        default: false
+        description: Publish to APT repository
+      publish_yum:
+          type: boolean
+          default: false
+          description: Publish to APT repository
+      gcp_ar_location:
+        type: string
+        default: "us"
+        description: "GCP Artifact Registry geo location"
+      gcp_ar_project_id:
+        type: string
+        default: "pub-artifacts-j8rjbu"
+        description: "GCP Artifact Registry pusher service account project id"
+      gcp_ar_pusher_workload_identity_provider:
+        type: string
+        default: "projects/701687754822/locations/global/workloadIdentityPools/github-actions/providers/github-actions"
+        description: "GCP Artifact Registry pusher workload identity provider id (with numeric project id)"
+      gcp_ar_pusher_service_account:
+        type: string
+        default: "gha-registry-writer@pub-artifacts-j8rjbu.iam.gserviceaccount.com"
+        description: "GCP Artifact Registry pusher service account"
+      gcp_ar_registry_cache_enabled:
+        type: boolean
+        default: false
+        description: "Use GCP Artifact Registry for docker cache"
+      gcp_ar_registry_cache_name:
+        type: string
+        description: "Docker registry used for layer caching"
+      gcp_ar_registry_cache_project_id:
+        type: string
+        description: "GCP Project ID of the docker registry used for layer caching, required if gcp_ar_registry_cache_enabled"
+      gcp_ar_apt_repository:
+        type: string
+        required: false
+        description: GCP APT repository to publish to, required if `publish_apt`
+      gcp_ar_yum_repository:
+        type: string
+        required: false
+        description: GCP APT repository to publish to, required if `publish_yum`
+      gha_cache_enabled:
+        type: boolean
+        default: false
+        description: "Use GHA Cache for docker cache"
+      runs_on:
+        type: string
+        default: ubuntu-latest
+        description: "GHA runner for the job (ubuntu-latest, ubuntu-latest-4c, ubuntu-latest-8c)"
+    secrets:
+      build_gh_pat_dependencies:
+        required: false
+        description: "GitHub token with read access to the private GitHub repositories with dependencies"
+      build_gpg_key:
+        required: true
+        description: "GPG Key to sign packages"
+      build_gpg_passphrase:
+        required: true
+        description: "GPG Key passphrase to sign packages"
+
+jobs:
+  deploy:
+    name: goreleaser build in docker
+    runs-on: ${{ inputs.runs_on }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: google-github-actions/auth@v2
+        with:
+          token_format: "access_token"
+          project_id: ${{ inputs.gcp_ar_project_id }}
+          workload_identity_provider: ${{ inputs.gcp_ar_pusher_workload_identity_provider }}
+          service_account: ${{ inputs.gcp_ar_pusher_service_account }}
+      - name: Set up Cloud CLI
+        uses: 'google-github-actions/setup-gcloud@v2'
+        with:
+          version: '>= 497.0.0'
+          install_components: "beta"
+      - name: Configure GCP Docker AR auth
+        if: ${{ inputs.gcp_ar_registry_cache_enabled }}
+        # Having params in a given cli as env. vars. does not improve security without extra validation
+        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
+        run: 'gcloud --project ${{ inputs.gcp_ar_registry_cache_project_id }} auth configure-docker us-docker.pkg.dev'
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Build in Docker
+        uses: docker/build-push-action@v6
+        if: not ${{ inputs.gcp_ar_registry_cache_enabled }}
+        with:
+          file: ${{ inputs.build_dockerfile }}
+          context: .
+          load: true
+          cache-from: ${{ inputs.gha_cache_enabled && 'type=gha' || '' }}
+          cache-to: ${{ inputs.gha_cache_enabled && 'type=gha,mode=max' || '' }}
+          target: ${{ inputs.build_dockerfile_target }}
+          tags: not-exists.elastiflow.com/builder
+          build-args: |
+            "BINARY=${{ inputs.binary }}"
+            "PKG_NAME=${{ inputs.pkg_name }}"
+            "PKG_FILE_NAME=${{ inputs.pkg_file_name }}"
+            "PKG_DESCRIPTION=${{ inputs.pkg_description }}"
+            ${{ inputs.build_args }}
+          secrets: |
+            "gh_pat_dependencies=${{ secrets.build_git_private_token }}"
+            "gpg_key=${{ secrets.build_gpg_key }}"
+            "gpg_passphrase=${{ secrets.build_gpg_passphrase }}"
+      - name: Build in Docker with GCP AR cache
+        uses: docker/build-push-action@v6
+        if: ${{ inputs.gcp_ar_registry_cache_enabled }}
+        with:
+          file: ${{ inputs.build_dockerfile }}
+          context: .
+          load: true
+          cache-from: type=registry,ref=${{ inputs.gcp_ar_registry_cache_name }}
+          cache-to: type=registry,ref=${{ inputs.gcp_ar_registry_cache_name }},mode=max
+          target: ${{ inputs.build_dockerfile_target }}
+          tags: not-exists.elastiflow.com/builder
+          build-args: |
+            "BINARY=${{ inputs.binary }}"
+            "PKG_NAME=${{ inputs.pkg_name }}"
+            "PKG_FILE_NAME=${{ inputs.pkg_file_name }}"
+            "PKG_DESCRIPTION=${{ inputs.pkg_description }}"
+            ${{ inputs.build_args }}
+          secrets: |
+            "gh_pat_dependencies=${{ secrets.build_git_private_token }}"
+            "gpg_key=${{ secrets.build_gpg_key }}"
+            "gpg_passphrase=${{ secrets.build_gpg_passphrase }}"
+      - name: Get build artifacts
+        run: |
+          docker run --rm -v `pwd`:/dst --name artifacter not-exists.elastiflow.com/builder sh -c 'cp -R dist /dst/'
+      - name: Publish to APT repository
+        if: ${{ inputs.publish_apt }}
+        # Having params in a given cli as env. vars. does not improve security without extra validation
+        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
+        run: |
+          find dist/ -type f -name '*.deb' | while read pkg_path; do
+              gcloud --project "${{ inputs.gcp_ar_project_id }}" \
+                  artifacts apt upload "${{ inputs.gcp_ar_apt_repository }}" \
+                  --location="${{ inputs.gcp_ar_location }}" --source=${pkg_path}
+          done
+      - name: Publish to YUM repository
+        if: ${{ inputs.publish_yum }}
+        # Having params in a given cli as env. vars. does not improve security without extra validation
+        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
+        run: |
+          find dist/ -type f -name '*.rpm' | while read pkg_path; do
+              gcloud --project "${{ inputs.gcp_ar_project_id }}" \
+                  artifacts yum upload "${{ inputs.gcp_ar_yum_repository }}" \
+                  --location="${{ inputs.gcp_ar_location }}" --source=${pkg_path}
+          done
+      - name: Create GH release
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8
+        if: ${{ inputs.publish_gh }}
+        with:
+          preserve_order: true
+          files: |
+            dist/*.deb
+            dist/*.deb.sig
+            dist/*.deb.sha256
+            dist/*.rpm
+            dist/*.rpm.sig
+            dist/*.rpm.sha256
