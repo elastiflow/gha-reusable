@@ -140,7 +140,7 @@ jobs:
             "PKG_DESCRIPTION=${{ inputs.pkg_description }}"
             ${{ inputs.build_args }}
           secrets: |
-            "gh_pat_dependencies=${{ secrets.build_git_private_token }}"
+            "gh_pat_dependencies=${{ secrets.build_gh_pat_dependencies }}"
             "gpg_key=${{ secrets.build_gpg_key }}"
             "gpg_passphrase=${{ secrets.build_gpg_passphrase }}"
       - name: Build in Docker with GCP AR cache
@@ -161,7 +161,7 @@ jobs:
             "PKG_DESCRIPTION=${{ inputs.pkg_description }}"
             ${{ inputs.build_args }}
           secrets: |
-            "gh_pat_dependencies=${{ secrets.build_git_private_token }}"
+            "gh_pat_dependencies=${{ secrets.build_gh_pat_dependencies }}"
             "gpg_key=${{ secrets.build_gpg_key }}"
             "gpg_passphrase=${{ secrets.build_gpg_passphrase }}"
       - name: Get build artifacts
