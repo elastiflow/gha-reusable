@@ -172,7 +172,7 @@ jobs:
         # Having params in a given cli as env. vars. does not improve security without extra validation
         # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
         run: |
-          find dist/ -type f -name '*.deb' | while read pkg_path; do
+          find dist/ -type f -name '*.deb' -print0 | while IFS= read -r -d '' pkg_path; do
               gcloud --project "${{ inputs.gcp_ar_project_id }}" \
                   artifacts apt upload "${{ inputs.gcp_ar_apt_repository }}" \
                   --location="${{ inputs.gcp_ar_location }}" --source=${pkg_path}
