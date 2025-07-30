@@ -77,7 +77,7 @@ on:
       gcp_ar_yum_repository:
         type: string
         required: false
-        description: GCP APT repository to publish to, required if `publish_yum`
+        description: GCP YUM repository to publish to, required if `publish_yum`
       gha_cache_enabled:
         type: boolean
         default: false
