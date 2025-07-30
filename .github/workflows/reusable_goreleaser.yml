@@ -43,7 +43,7 @@ on:
       publish_yum:
           type: boolean
           default: false
-          description: Publish to APT repository
+          description: Publish to YUM repository
       gcp_ar_location:
         type: string
         default: "us"
