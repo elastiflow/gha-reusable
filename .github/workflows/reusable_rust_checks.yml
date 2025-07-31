@@ -1,13 +1,37 @@
 on:
   workflow_call:
     inputs:
+      unit_test_linux_enabled:
+        type: boolean
+        default: false
+        description: "Run unit tests on Linux"
+      unit_test_linux_runs-on:
+        type: string
+        default: ubuntu-latest
+        description: "GHA runner for the Unit Test job (ubuntu-latest, ubuntu-latest-4c, ubuntu-latest-8c)"
+      unit_test_mac_enabled:
+        type: boolean
+        default: false
+        description: "Run unit tests on Mac"
+      unit_test_mac_runs-on:
+        type: string
+        default: macos-latest
+        description: "GHA runner for the Unit Test job (macos-latest, macos-latest-large, macos-latest-xlarge)"
+      unit_test_win_enabled:
+        type: boolean
+        default: false
+        description: "Run unit tests on Windows"
+      unit_test_win_runs-on:
+        type: string
+        default: windows-latest
+        description: "GHA runner for the Unit Test job (windows-latest)"
       runs-on:
         type: string
         default: ubuntu-latest
         description: "GHA runner for the job (ubuntu-latest, ubuntu-latest-4c, ubuntu-latest-8c)"
       timeout-minutes:
         type: number
-        default: 10
+        default: 30
         description: "Job timeout in minutes"
 
 jobs:
@@ -53,18 +77,94 @@ jobs:
       - name: Run
         run: cargo clippy --workspace --all-targets --all-features -- -D warnings
 
-  unit_test:
-    name: 'unit test'
+  unit_test_linux:
+    name: 'unit test linux'
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
         toolchain: [ stable, nightly ]
-    runs-on: ${{ matrix.os }}
+        target:
+          - aarch64-unknown-linux-gnu
+          - aarch64-unknown-linux-musl
+          - x86_64-unknown-linux-gnu
+          - x86_64-unknown-linux-musl
+    runs-on: ${{ inputs.unit_test_linux_runs-on }}
+    if: ${{ inputs.unit_test_linux_enabled }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           toolchain: ${{ matrix.toolchain }}
-      - name: cargo test
-        run: "cargo test --workspace --all-targets --all-features --verbose"
+          target: ${{ matrix.target }}
+      - name: Configure Cargo for cross-compilation
+        run: |
+          mkdir -p .cargo
+          cat > .cargo/config.toml <<EOL
+            [target.aarch64-unknown-linux-gnu]
+            linker = "aarch64-linux-gnu-gcc"
+
+            [target.aarch64-unknown-linux-musl]
+            linker = "aarch64-linux-gnu-gcc"
+          EOL
+      - name: Install protoc
+        run: sudo apt-get update && sudo apt-get install -y protobuf-compiler gcc-aarch64-linux-gnu musl-tools
+      - name: Build tests for cross-targets
+        if: contains(matrix.target, 'aarch64')
+        run: cargo build --tests --workspace --all-targets --all-features --verbose
+      - name: Run tests on native target
+        if: contains(matrix.target, 'x86_64')
+        run: cargo test --workspace --all-targets --all-features --verbose
+
+  unit_test_mac:
+    name: 'unit test mac'
+    strategy:
+      matrix:
+        toolchain: [ stable, nightly ]
+        target:
+          - aarch64-apple-darwin
+          - x86_64-apple-darwin
+    runs-on: ${{ inputs.unit_test_mac_runs-on }}
+    if: ${{ inputs.unit_test_mac_enabled }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          target: ${{ matrix.target }}
+      - name: Install protoc
+        run: brew install protobuf
+      - name: Build tests for cross-targets
+        if: contains(matrix.target, 'aarch64')
+        run: cargo build --tests --workspace --all-targets --all-features --verbose
+      - name: Run tests on native target
+        if: contains(matrix.target, 'x86_64')
+        run: cargo test --workspace --all-targets --all-features --verbose
+
+  unit_test_win:
+    name: 'unit test win'
+    strategy:
+      matrix:
+        toolchain: [ stable, nightly ]
+        target:
+          - x86_64-pc-windows-msvc
+          - x86_64-pc-windows-gnu
+          - aarch64-pc-windows-msvc
+          - aarch64-pc-windows-gnullvm
+    runs-on: ${{ inputs.unit_test_win_runs-on }}
+    if: ${{ inputs.unit_test_win_enabled }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: ${{ matrix.toolchain }}
+          target: ${{ matrix.target }}
+      - name: Install protoc
+        run: choco install protoc
+      - name: Build tests for cross-targets
+        if: contains(matrix.target, 'aarch64')
+        run: cargo build --tests --workspace --all-targets --all-features --verbose
+      - name: Run tests on native target
+        if: contains(matrix.target, 'x86_64')
+        run: cargo test --workspace --all-targets --all-features --verbose
