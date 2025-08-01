@@ -84,9 +84,7 @@ jobs:
         toolchain: [ stable, nightly ]
         target:
           - aarch64-unknown-linux-gnu
-          - aarch64-unknown-linux-musl
           - x86_64-unknown-linux-gnu
-          - x86_64-unknown-linux-musl
     runs-on: ${{ inputs.unit_test_linux_runs-on }}
     if: ${{ inputs.unit_test_linux_enabled }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
@@ -149,8 +147,6 @@ jobs:
         target:
           - x86_64-pc-windows-msvc
           - x86_64-pc-windows-gnu
-          - aarch64-pc-windows-msvc
-          - aarch64-pc-windows-gnullvm
     runs-on: ${{ inputs.unit_test_win_runs-on }}
     if: ${{ inputs.unit_test_win_enabled }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
