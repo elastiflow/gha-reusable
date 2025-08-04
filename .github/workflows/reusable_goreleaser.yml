@@ -10,9 +10,6 @@ on:
         type: string
         required: true
         description: Package name, present in the manifests, seen in the YUM/APT repository
-      pkg_file_name:
-        type: string
-        description: Package file name, may be needed for backwards compatibility
       pkg_description:
         type: string
         required: true
@@ -136,7 +133,6 @@ jobs:
           build-args: |
             "BINARY=${{ inputs.binary }}"
             "PKG_NAME=${{ inputs.pkg_name }}"
-            "PKG_FILE_NAME=${{ inputs.pkg_file_name }}"
             "PKG_DESCRIPTION=${{ inputs.pkg_description }}"
             ${{ inputs.build_args }}
           secrets: |
@@ -157,7 +153,6 @@ jobs:
           build-args: |
             "BINARY=${{ inputs.binary }}"
             "PKG_NAME=${{ inputs.pkg_name }}"
-            "PKG_FILE_NAME=${{ inputs.pkg_file_name }}"
             "PKG_DESCRIPTION=${{ inputs.pkg_description }}"
             ${{ inputs.build_args }}
           secrets: |
