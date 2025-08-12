@@ -96,7 +96,7 @@ on:
 
 jobs:
   deploy:
-    name: goreleaser build in docker
+    name: goreleaser build/publish
     runs-on: ${{ inputs.runs_on }}
     steps:
       - name: Checkout
