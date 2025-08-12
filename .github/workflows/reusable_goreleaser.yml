@@ -61,12 +61,12 @@ on:
         type: boolean
         default: false
         description: "Use GCP Artifact Registry for docker cache"
-      gcp_ar_registry_cache_name:
-        type: string
-        description: "Docker registry used for layer caching"
       gcp_ar_registry_cache_project_id:
         type: string
         description: "GCP Project ID of the docker registry used for layer caching, required if gcp_ar_registry_cache_enabled"
+      gcp_ar_registry_cache_name:
+        type: string
+        description: "Docker registry used for layer caching"
       gcp_ar_apt_repository:
         type: string
         required: false
