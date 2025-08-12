@@ -61,12 +61,12 @@ on:
         type: boolean
         default: false
         description: "Use GCP Artifact Registry for docker cache"
-      gcp_ar_registry_cache_name:
-        type: string
-        description: "Docker registry used for layer caching"
       gcp_ar_registry_cache_project_id:
         type: string
         description: "GCP Project ID of the docker registry used for layer caching, required if gcp_ar_registry_cache_enabled"
+      gcp_ar_registry_cache_name:
+        type: string
+        description: "Docker registry used for layer caching"
       gcp_ar_apt_repository:
         type: string
         required: false
@@ -96,7 +96,7 @@ on:
 
 jobs:
   deploy:
-    name: goreleaser build in docker
+    name: goreleaser build/publish
     runs-on: ${{ inputs.runs_on }}
     steps:
       - name: Checkout
@@ -121,7 +121,7 @@ jobs:
         uses: docker/setup-buildx-action@v3
       - name: Build in Docker
         uses: docker/build-push-action@v6
-        if: not ${{ inputs.gcp_ar_registry_cache_enabled }}
+        if: ${{ !inputs.gcp_ar_registry_cache_enabled }}
         with:
           file: ${{ inputs.build_dockerfile }}
           context: .
