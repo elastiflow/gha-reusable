@@ -49,3 +49,5 @@ It is expected this action to be used with other actions to perform tag and rele
           preserve_order: true
           make_latest: true
 ```
+
+Please see the action manifest `inputs`/`outputs` for the config details.
