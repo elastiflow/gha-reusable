@@ -20,13 +20,12 @@ It is expected this action to be used with other actions to perform tag and rele
     runs-on: ubuntu-latest
     permissions:
       contents: write
-      pull-requests: write
     steps:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Prepare Release
         id: prepare_release
-        uses: ./.github/actions/composite_release
+        uses: elastiflow/gha-reusable/actions/prepare-release@v0
         with:
           branch: "${{ github.ref_name }}"
           changelog_update: true

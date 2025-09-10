@@ -1,5 +1,5 @@
-name: 'Deploy Cloudflare Worker'
-description: 'Upload and deploy Cloudflare Worker version'
+name: 'Prepare release'
+description: 'Update manifests, changelog before the release'
 inputs:
   branch:
     required: true
