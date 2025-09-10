@@ -27,7 +27,7 @@ CI:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Build docker image
-        uses: ./.github/actions/docker-build-push
+        uses: elastiflow/gha-reusable/actions/docker-build-push@v0
         with:
           platforms: ${{ fromJson(env.RUNNER_PLATFORM)[matrix.runner] }}
           target: ${{ matrix.target }}
@@ -66,7 +66,7 @@ Release:
       - name: Checkout
         uses: actions/checkout@v5
       - name: Build docker image
-        uses: ./.github/actions/docker-build-push
+        uses: elastiflow/gha-reusable/actions/docker-build-push@v0
         with:
           registry: ghcr.io
           image: ${{ github.repository }}
