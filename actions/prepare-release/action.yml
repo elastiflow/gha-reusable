@@ -93,7 +93,12 @@ runs:
       run: |
         echo 'Update the changelog'
         if [ ! -f '${{ inputs.changelog_path }}' ]; then touch '${{ inputs.changelog_path }}'; fi
-        cat <(echo '${{ steps.semantic_release.outputs.new_release_notes }}') <(echo) ${{ inputs.changelog_path }} > /tmp/chlog
+
+        cat > /tmp/chlog <<- EOF
+        ${{ steps.semantic_release.outputs.new_release_notes }}
+
+        $(cat ${{ inputs.changelog_path }})
+        EOF
         mv /tmp/chlog ${{ inputs.changelog_path }}
     - name: Commit back
       if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) && fromJson(inputs.commit_back) }}
