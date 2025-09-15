@@ -101,3 +101,12 @@ runs:
       with:
         commit_message: |
           doc: Update version/changelog
+    # Git notes are needed for "semantic-release" to properly detect release channel
+    - name: Add git notes
+      if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) }}
+      shell: bash
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+        git notes --ref semantic-release add -f -m '{"channels":["${{ steps.semantic_release.outputs.new_release_channel }}"]}'
+        git push origin refs/notes/semantic-release
