@@ -1,12 +1,12 @@
 name: 'Prepare release'
 description: 'Update manifests, changelog before the release'
 inputs:
-  branch:
-    required: true
-    description: "Release branch"
   commit_back:
     default: "false"
     description: "Commit and push version updates"
+  add_git_notes:
+    default: "false"
+    description: "Add and push \"semantic-release\" git notes to determine release channel. Should be `true` if release is going to be done"
   changelog_update:
     default: "false"
     description: "Update changelog"
@@ -72,10 +72,6 @@ runs:
         ci: false
         dry_run: true
         unset_gha_env: true
-        branches: |
-          [
-            '${{ inputs.branch }}'
-          ]
         extra_plugins: |
           conventional-changelog-conventionalcommits
     - name: Bump version in YAML
@@ -108,3 +104,12 @@ runs:
       with:
         commit_message: |
           doc: Update version/changelog
+    # Git notes are needed for "semantic-release" to properly detect release channel
+    - name: Add git notes
+      if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) && fromJson(inputs.add_git_notes)}}
+      shell: bash
+      run: |
+        git config --global user.email "github-actions[bot]@users.noreply.github.com"
+        git config --global user.name "github-actions[bot]"
+        git notes --ref semantic-release add -f -m '{"channels":["${{ steps.semantic_release.outputs.new_release_channel }}"]}'
+        git push origin refs/notes/semantic-release
