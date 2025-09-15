@@ -27,7 +27,7 @@ It is expected this action to be used with other actions to perform tag and rele
         id: prepare_release
         uses: elastiflow/gha-reusable/actions/prepare-release@v0
         with:
-          branch: "${{ github.ref_name }}"
+          add_git_notes: true
           changelog_update: true
           bump_version_yaml: true
           bump_version_yaml_path: galaxy.yml
