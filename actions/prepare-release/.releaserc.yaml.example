@@ -3,3 +3,8 @@ plugins:
     - preset: conventionalcommits
   - - "@semantic-release/release-notes-generator"
     - preset: conventionalcommits
+# For pre-release branches
+branches:
+  - main
+  - name: (alpha|beta|rc)
+    prerelease: true
