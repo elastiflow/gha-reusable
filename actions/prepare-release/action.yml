@@ -1,9 +1,6 @@
 name: 'Prepare release'
 description: 'Update manifests, changelog before the release'
 inputs:
-  branch:
-    required: true
-    description: "Release branch"
   commit_back:
     default: "false"
     description: "Commit and push version updates"
@@ -72,10 +69,6 @@ runs:
         ci: false
         dry_run: true
         unset_gha_env: true
-        branches: |
-          [
-            '${{ inputs.branch }}'
-          ]
         extra_plugins: |
           conventional-changelog-conventionalcommits
     - name: Bump version in YAML
