@@ -22,7 +22,8 @@ inputs:
       Required if `bump_version_yaml`
   bump_version_yaml_key:
     description: |
-      Version key in the YAML file, in the [yq](https://mikefarah.gitbook.io/yq) format
+      Version key in the YAML file, in the [yq](https://mikefarah.gitbook.io/yq) format.
+      Coma-separated list of keys are supported (no spaces)
       Required if `bump_version_yaml`
   # Sensitive inputs
   github_token:
