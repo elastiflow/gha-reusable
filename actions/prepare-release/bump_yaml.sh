@@ -14,7 +14,7 @@ keys=$(echo $yaml_key | tr ',' '\n')
 update_yaml_key() {
     yq "${1} = \"${new_release_version}\"" ${yaml_path} > /tmp/new.yaml
     if grep -q ${new_release_version} /tmp/new.yaml; then
-        echo 'Version update succeed, new:'
+        echo 'Version update succeeded, new:'
         grep ${new_release_version} /tmp/new.yaml
     else
         echo 'Version update failed, exiting'
