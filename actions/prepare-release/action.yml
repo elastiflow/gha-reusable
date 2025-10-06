@@ -5,6 +5,15 @@ inputs:
     required: false
     description: |
       The semantic-release tag format, like "v${version}" or "someapp-${version}
+  semantic_release_working_directory:
+    required: false
+    description: |
+      The semantic-release working directory
+  semantic_release_monorepo:
+    default: "false"
+    description: |
+      Install the semantic-release semantic-release-monorepo plugin
+      Most likely you would want to set the "semantic_release_working_directory"
   commit_back:
     default: "false"
     description: "Commit and push version updates"
@@ -68,6 +77,12 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Install semantic-release-monorepo
+      if: ${{ fromJson(inputs.semantic_release_monorepo) }}
+      shell: bash
+      run: |
+        npm install -D semantic-release-monorepo@8.0.2 conventional-changelog-conventionalcommits
+      working-directory: ${{ inputs.semantic_release_working_directory }}
     - name: Semantic Release
       id: semantic_release
       uses: cycjimmy/semantic-release-action@9cc899c47e6841430bbaedb43de1560a568dfd16 # v5.0.0
@@ -75,6 +90,7 @@ runs:
         GITHUB_TOKEN: ${{ inputs.github_token }}
       with:
         tag_format: ${{ inputs.semantic_release_tag_format }}
+        working_directory: ${{ inputs.semantic_release_working_directory }}
         ci: false
         dry_run: true
         unset_gha_env: true
@@ -119,3 +135,9 @@ runs:
         git config --global user.name "github-actions[bot]"
         git notes --ref semantic-release add -f -m '{"channels":["${{ steps.semantic_release.outputs.new_release_channel }}"]}'
         git push origin refs/notes/semantic-release
+    - name: Cleanup semantic-release-monorepo
+      if: ${{ fromJson(inputs.semantic_release_monorepo) }}
+      shell: bash
+      run: |
+        rm -rf package-lock.json package.json node_modules
+      working-directory: ${{ inputs.semantic_release_working_directory }}

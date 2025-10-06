@@ -45,8 +45,36 @@ It is expected this action to be used with other actions to perform tag and rele
         with:
           tag_name: v${{ steps.prepare_release.outputs.new_release_version }}
           body: ${{ steps.prepare_release.outputs.new_release_notes }}
+          target_commitish: ${{ github.ref_name }}
           preserve_order: true
           make_latest: true
 ```
 
 Please see the action manifest `inputs`/`outputs` for the config details.
+
+## "git notes"
+
+The action can add [git notes](https://git-scm.com/docs/git-notes) which are required for the "semantic-release" to properly detect a release channel.
+It makes sense to add "git notes" to the commits on a release/pre-release branches only, so action will add "git notes" (if enabled) to the `HEAD` commit on the current branch, e.g. if release is happening from `main`, release notes are added to the `HEAD` commit from `main` branch.
+
+## Monorepo support (experimental)
+
+This action may be used with monorepos, provided the directory structure is properly configured. To enable monorepo support:
+
+- Add [semantic-release-monorepo](https://github.com/pmowrer/semantic-release-monorepo) to your `.releaserc.yaml` configuration.
+- Place the `.releaserc.yaml` to a separate directory (application directory in the monorepo)
+- Specify the `semantic_release_working_directory` and `semantic_release_monorepo` inputs in the action.
+
+Example configuration:
+
+```yaml
+plugins:
+  - - "@semantic-release/commit-analyzer"
+    - preset: conventionalcommits
+  - - "@semantic-release/release-notes-generator"
+    - preset: conventionalcommits
+extends: semantic-release-monorepo
+tagFormat: awesomeApp-${version}
+```
+
+When using a monorepo, only changes within the specified `semantic_release_working_directory` are considered for versioning and changelog generation. This ensures releases are scoped to the relevant package or component within the repository.
