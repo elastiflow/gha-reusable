@@ -1,18 +1,18 @@
 # Overview
 
-`prepare-release` is the opinionated way to generate [semver](https://semver.org/) version number using [semantic-release](https://github.com/semantic-release/semantic-release).  
+`prepare-release` is the opinionated way to generate [semver](https://semver.org/) version number and changelog using [git-cliff](https://git-cliff.org/docs/).  
 Action supports:
 
 - Generate and update the Changelog
 - Update version in the arbitrary YAML manifest
-- Optionally (default `false`) commit and push changes back to the branch.
 
-Note, `semantic-release` will not perform any release, used purely to:
+Note, the action will not perform any releases or pushes, used purely to:
 
+- Determine if release should happen
 - Generate next version number
 - Generate changelog
 
-It is expected this action to be used with other actions to perform tag and release, for example:
+It is expected this action to be used with other actions to perform tag and release, for example to create a "release" PR:
 
 ```yaml
   release:
@@ -23,6 +23,8 @@ It is expected this action to be used with other actions to perform tag and rele
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+        with:
+          fetch-depth: 0 # Required, git-cliff uses the local git repo to read through tags and commits
       - name: Prepare Release
         id: prepare_release
         uses: elastiflow/gha-reusable/actions/prepare-release@v0
@@ -32,7 +34,6 @@ It is expected this action to be used with other actions to perform tag and rele
           bump_version_yaml: true
           bump_version_yaml_path: galaxy.yml
           bump_version_yaml_key: '.version'
-          github_token: ${{ secrets.GITHUB_TOKEN }}
       - name: Create and push semver tag
         if: ${{ fromJson(steps.prepare_release.outputs.new_release_published) }}
         uses: anothrNick/github-tag-action@e528bc2b9628971ce0e6f823f3052d1dcd9d512c
@@ -52,29 +53,7 @@ It is expected this action to be used with other actions to perform tag and rele
 
 Please see the action manifest `inputs`/`outputs` for the config details.
 
-## "git notes"
-
-The action can add [git notes](https://git-scm.com/docs/git-notes) which are required for the "semantic-release" to properly detect a release channel.
-It makes sense to add "git notes" to the commits on a release/pre-release branches only, so action will add "git notes" (if enabled) to the `HEAD` commit on the current branch, e.g. if release is happening from `main`, release notes are added to the `HEAD` commit from `main` branch.
-
 ## Monorepo support (experimental)
 
-This action may be used with monorepos, provided the directory structure is properly configured. To enable monorepo support:
-
-- Add [semantic-release-monorepo](https://github.com/pmowrer/semantic-release-monorepo) to your `.releaserc.yaml` configuration.
-- Place the `.releaserc.yaml` to a separate directory (application directory in the monorepo)
-- Specify the `semantic_release_working_directory` and `semantic_release_monorepo` inputs in the action.
-
-Example configuration:
-
-```yaml
-plugins:
-  - - "@semantic-release/commit-analyzer"
-    - preset: conventionalcommits
-  - - "@semantic-release/release-notes-generator"
-    - preset: conventionalcommits
-extends: semantic-release-monorepo
-tagFormat: awesomeApp-${version}
-```
-
-When using a monorepo, only changes within the specified `semantic_release_working_directory` are considered for versioning and changelog generation. This ensures releases are scoped to the relevant package or component within the repository.
+This action may be used with monorepos, provided the directory structure is properly configured. `include_paths` and `exclude_paths` options are used to determine commits related to a release.
+Additionally it's a good idea to define `tag_prefix` to be `appname-` to so the action only counts `appname-` prefixed tags.

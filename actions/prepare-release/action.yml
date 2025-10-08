@@ -1,22 +1,27 @@
 name: 'Prepare release'
 description: 'Update manifests, changelog before the release'
 inputs:
-  semantic_release_tag_format:
-    required: false
-    description: |
-      The semantic-release tag format, like "v${version}" or "someapp-${version}
-  semantic_release_working_directory:
-    required: false
-    description: |
-      The semantic-release working directory
-  semantic_release_monorepo:
+  pre_release:
     default: "false"
+    description: Should a pre-release happen (${version}-alpha.1, ${version}-alpha.2, ...) instead of normal release
+  tag_prefix:
+    default: "v"
+    description: Tag prefix to parse/create
+  git_cliff_version:
+    default: "2.10.1"
+    description: "git-cliff version"
+  include_paths:
+    default: '**/*'
     description: |
-      Install the semantic-release semantic-release-monorepo plugin
-      Most likely you would want to set the "semantic_release_working_directory"
-  commit_back:
-    default: "false"
-    description: "Commit and push version updates"
+      Include paths to determine related commits, coma-separated list
+      Used as the --include-path values for `git-cliff` (globs supported), for example:
+      include_path: 'charts/chart-one/**/*,charts/chart-two/**/*'
+  exclude_paths:
+    default: ''
+    description: |
+      Exclude paths to determine related commits, coma-separated list
+      Used as the --exclude-path values for `git-cliff` (globs supported), for example:
+      exclude_path: 'charts/chart-one/**/*,charts/chart-two/**/*'
   add_git_notes:
     default: "false"
     description: "Add and push \"semantic-release\" git notes to determine release channel. Should be `true` if release is going to be done"
@@ -38,13 +43,6 @@ inputs:
       Version key in the YAML file, in the [yq](https://mikefarah.gitbook.io/yq) format.
       Coma-separated list of keys are supported (no spaces)
       Required if `bump_version_yaml`
-  # Sensitive inputs
-  github_token:
-    required: true
-    description: "GitHub token to use"
-  github_token_push:
-    required: false
-    description: "GitHub token to use pushing changes back, `github_token` if unset"
 outputs:
   new_release_published:
     description: "New released published or to be published"
@@ -52,21 +50,12 @@ outputs:
   new_release_version:
     description: "New release version"
     value: ${{ steps.semantic_release.outputs.new_release_version }}
-  new_release_major_version:
-    description: "New release major version"
-    value: ${{ steps.semantic_release.outputs.new_release_major_version }}
-  new_release_minor_version:
-    description: "New release minor version"
-    value: ${{ steps.semantic_release.outputs.new_release_minor_version }}
-  new_release_patch_version:
-    description: "New release patch version"
-    value: ${{ steps.semantic_release.outputs.new_release_patch_version }}
+  new_release_git_tag:
+    description: "New release git tag"
+    value: ${{ steps.semantic_release.outputs.new_release_version }}
   new_release_notes:
     description: "New release changelog"
     value: ${{ steps.semantic_release.outputs.new_release_notes }}
-  new_release_channel:
-    description: "New release channel"
-    value: ${{ steps.semantic_release.outputs.new_release_channel }}
   last_release_version:
     description: "Last release version"
     value: ${{ steps.semantic_release.outputs.last_release_version }}
@@ -74,28 +63,24 @@ outputs:
     description: "Last release tag"
     value: ${{ steps.semantic_release.outputs.last_release_git_tag }}
 
+
 runs:
   using: "composite"
   steps:
-    - name: Install semantic-release-monorepo
-      if: ${{ fromJson(inputs.semantic_release_monorepo) }}
+    - name: Install git-cliff
       shell: bash
       run: |
-        npm install -D semantic-release-monorepo@8.0.2 conventional-changelog-conventionalcommits
-      working-directory: ${{ inputs.semantic_release_working_directory }}
-    - name: Semantic Release
+        wget -c -O - https://github.com/orhun/git-cliff/releases/download/v${{ inputs.git_cliff_version }}/git-cliff-${{ inputs.git_cliff_version }}-x86_64-unknown-linux-gnu.tar.gz \
+          | tar xfvpz - --directory /usr/local/bin --strip-components=1 git-cliff-${{ inputs.git_cliff_version }}/git-cliff
+    - name: Semantic Release attributes (git-cliff)
       id: semantic_release
-      uses: cycjimmy/semantic-release-action@9cc899c47e6841430bbaedb43de1560a568dfd16 # v5.0.0
-      env:
-        GITHUB_TOKEN: ${{ inputs.github_token }}
-      with:
-        tag_format: ${{ inputs.semantic_release_tag_format }}
-        working_directory: ${{ inputs.semantic_release_working_directory }}
-        ci: false
-        dry_run: true
-        unset_gha_env: true
-        extra_plugins: |
-          conventional-changelog-conventionalcommits
+      shell: bash
+      run: |
+        bash .github/actions/prepare-release/git_cliff.sh \
+          -c '${{ github.action_path }}/cliff.toml' \
+          -t '${{ inputs.tag_prefix }}' \
+          -i '${{ inputs.include_paths }}' \
+          -e '${{ inputs.exclude_paths }}'
     - name: Bump version in YAML
       if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) && fromJson(inputs.bump_version_yaml) }}
       shell: bash
@@ -118,26 +103,3 @@ runs:
         $(cat ${{ inputs.changelog_path }})
         EOF
         mv /tmp/chlog ${{ inputs.changelog_path }}
-    - name: Commit back
-      if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) && fromJson(inputs.commit_back) }}
-      uses: stefanzweifel/git-auto-commit-action@778341af668090896ca464160c2def5d1d1a3eb0 # v6.0.1
-      env:
-        GITHUB_TOKEN: ${{ inputs.github_token_push || inputs.github_token }}
-      with:
-        commit_message: |
-          doc: Update version/changelog
-    # Git notes are needed for "semantic-release" to properly detect release channel
-    - name: Add git notes
-      if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) && fromJson(inputs.add_git_notes)}}
-      shell: bash
-      run: |
-        git config --global user.email "github-actions[bot]@users.noreply.github.com"
-        git config --global user.name "github-actions[bot]"
-        git notes --ref semantic-release add -f -m '{"channels":["${{ steps.semantic_release.outputs.new_release_channel }}"]}'
-        git push origin refs/notes/semantic-release
-    - name: Cleanup semantic-release-monorepo
-      if: ${{ fromJson(inputs.semantic_release_monorepo) }}
-      shell: bash
-      run: |
-        rm -rf package-lock.json package.json node_modules
-      working-directory: ${{ inputs.semantic_release_working_directory }}
