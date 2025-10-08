@@ -59,6 +59,7 @@ This action may be used with monorepos, provided the directory structure is prop
 Additionally it's a good idea to define `tag_prefix` to be `appname-` to so the action only counts `appname-` prefixed tags.
 
 Example to prefix tags with `awesome-app-`, include everything but exclude all files under `charts/awesome-app-with-opensearch/`
+
 ```yaml
         with:
           tag_prefix: "awesome-app-"
