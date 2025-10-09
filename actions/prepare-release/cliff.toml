@@ -1,0 +1,45 @@
+# git-cliff ~ configuration file
+# https://git-cliff.org/docs/configuration
+
+[changelog]
+# Render body even when there are no releases to process.
+render_always = false
+# A Tera template to be rendered for each release in the changelog.
+# See https://keats.github.io/tera/docs/#introduction
+body = """
+    ## [{{ version }}] - {{ timestamp | date(format="%Y-%m-%d") }}
+    {% for group, commits in commits | group_by(attribute="group") %}
+        ### {{ group | striptags | trim | upper_first }}
+        {% for commit in commits %}
+            - {% if commit.scope %}**{{ commit.scope }}:** {% endif %}\
+                {% if commit.breaking %}[**breaking**] {% endif %}\
+                {{ commit.message | upper_first }}\
+        {% endfor %}
+    {%- endfor %}
+    {%- if previous.version %}
+
+    [{{ previous.version }}..{{ version }}](https://github.com/{{ remote.github.owner }}/{{ remote.github.repo }}/compare/{{ previous.version }}...{{ version }})
+    {%- endif %}
+
+    """
+
+[git]
+# Include only the tags that belong to the current branch.
+use_branch_tags = true
+commit_parsers = [
+    { message = "^feat", group = "Features" },
+    { message = "^fix", group = "Bug Fixes" },
+    { message = "^doc", group = "Documentation", skip = true  },
+    { message = "^perf", group = "Performance", skip = true  },
+    { message = "^refactor", group = "Refactor", skip = true  },
+    { message = "^style", group = "Styling", skip = true  },
+    { message = "^test", group = "Testing", skip = true },
+    { message = "^chore\\(release\\): prepare for", skip = true },
+    { message = "^chore\\(deps.*\\)", skip = true },
+    { message = "^chore\\(pr\\)", skip = true },
+    { message = "^chore\\(pull\\)", skip = true },
+    { message = "^chore|^ci", group = "Miscellaneous Tasks", skip = true  },
+    { body = ".*security", group = "Security" },
+    { message = "^revert", group = "Revert" },
+    { message = ".*", group = "Other" },
+]
