@@ -24,8 +24,6 @@ body = """
     """
 
 [git]
-# Include only the tags that belong to the current branch.
-use_branch_tags = true
 commit_parsers = [
     { message = "^feat", group = "Features" },
     { message = "^fix", group = "Bug Fixes" },
