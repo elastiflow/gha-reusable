@@ -13,7 +13,7 @@ inputs:
   include_paths:
     default: '**/*'
     description: |
-      Include paths to determine related commits, coma-separated list
+      Include paths to determine related commits, comma-separated list
       Used as the --include-path values for `git-cliff` (globs supported), for example:
       include_path: 'charts/chart-one/**/*,charts/chart-two/**/*'
   exclude_paths:
