@@ -19,7 +19,7 @@ inputs:
   exclude_paths:
     default: ''
     description: |
-      Exclude paths to determine related commits, coma-separated list
+      Exclude paths to determine related commits, comma-separated list
       Used as the --exclude-path values for `git-cliff` (globs supported), for example:
       exclude_path: 'charts/chart-one/**/*,charts/chart-two/**/*'
   add_git_notes:
