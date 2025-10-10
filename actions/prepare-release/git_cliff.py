@@ -8,7 +8,7 @@ import subprocess
 import sys
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", dest="config", help="Makefile to run", required=True)
     parser.add_argument("--tag-prefix", dest="tag_prefix", help="git-cliff tag prefix", required=True)

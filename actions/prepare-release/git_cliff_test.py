@@ -1,6 +1,5 @@
 import os
 import pathlib
-import textwrap
 
 import pytest
 from git_cliff import from_git_cliff_context, gen_gha_output, gen_incl_excl_paths, get_by_dot, parse_tag
@@ -57,7 +56,7 @@ def test_gen_incl_excl_paths(arg, param, want):
 
 def _load_git_cliff_context(path: str) -> str:
     prefix = pathlib.Path(os.path.realpath(__file__)).parent
-    with open(pathlib.Path(prefix).joinpath(path)) as fh:
+    with pathlib.Path(prefix).joinpath(path).open() as fh:
         return fh.read()
 
 
