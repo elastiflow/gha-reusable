@@ -1,0 +1,13 @@
+name: CI
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+on:
+  pull_request:
+  push:
+    branches: ["main"]
+
+jobs:
+  python_checks:
+    name: Python checks
+    uses: ./.github/workflows/reusable_python_checks.yml

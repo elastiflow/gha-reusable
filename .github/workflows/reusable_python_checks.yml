@@ -1,0 +1,93 @@
+on:
+  workflow_call:
+    inputs:
+      unit_test_cmd:
+        type: string
+        default: "uv run pytest"
+        description: "Command to run your unit tests"
+      unit_test_report_coverage_cmd:
+        type: string
+        default: "uv run pytest --cov=. --cov-report=xml:coverage.xml"
+        description: "Command to report unit test coverage"
+      runs-on:
+        type: string
+        default: ubuntu-latest
+        description: "Runner for linting jobs (e.g., ubuntu-latest)"
+      unit_test_runs-on:
+        type: string
+        default: ubuntu-latest
+        description: "Runner for the unit test job"
+      timeout-minutes:
+        type: number
+        default: 10
+        description: "Job timeout in minutes"
+      sonarcloud_run:
+        type: boolean
+        default: false
+        description: "If true, run a SonarCloud scan after unit tests complete"
+      sonarcloud_project_key:
+        type: string
+        default: ""
+        description: "SonarCloud project key"
+      sonarcloud_org:
+        type: string
+        default: "elastiflow"
+        description: "SonarCloud organization"
+    secrets:
+      sonarcloud_token:
+        required: false
+        description: "SonarCloud token (required if sonarcloud_run is true)"
+
+jobs:
+  ruff_lint:
+    name: "ruff lint"
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+      - name: Install the project
+        run: uv sync --dev
+      - name: Check lockfile
+        run: uv lock --check
+      - name: Run Ruff Linting
+        run: uv run ruff check .
+      - name: Run Ruff formatting
+        run: uv run ruff format --check
+  unit_test:
+    name: "unit test"
+    runs-on: ${{ inputs.unit_test_runs-on }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: "pyproject.toml"
+      - name: Install the project
+        run: uv sync --dev
+      - name: Run unit tests
+        run: ${{ inputs.unit_test_cmd }}
+      - name: Generate coverage report
+        run: ${{ inputs.unit_test_report_coverage_cmd }}
+      - name: SonarCloud Scan
+        if: ${{ inputs.sonarcloud_run }}
+        uses: SonarSource/sonarqube-scan-action@v6
+        with:
+          args: >
+            -Dsonar.projectKey=${{ inputs.sonarcloud_project_key }}
+            -Dsonar.organization=${{ inputs.sonarcloud_org }}
+            -Dsonar.python.coverage.reportPaths=coverage.xml
+        env:
+          SONAR_TOKEN: ${{ secrets.sonarcloud_token }}

@@ -1,0 +1,17 @@
+# Misc
+.DS_Store
+tmp.*
+*.diff
+
+# IDE
+.idea
+.vscode
+
+# Python
+.venv
+.ruff_cache
+__pycache__
+**_cache
+mib2conf_venv
+.coverage
+coverage.xml
