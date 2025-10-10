@@ -22,9 +22,6 @@ inputs:
       Exclude paths to determine related commits, comma-separated list
       Used as the --exclude-path values for `git-cliff` (globs supported), for example:
       exclude_path: 'charts/chart-one/**/*,charts/chart-two/**/*'
-  add_git_notes:
-    default: "false"
-    description: "Add and push \"semantic-release\" git notes to determine release channel. Should be `true` if release is going to be done"
   changelog_update:
     default: "false"
     description: "Update changelog"

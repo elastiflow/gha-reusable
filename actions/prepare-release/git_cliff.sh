@@ -65,6 +65,7 @@ cliff_args="${config_arg} ${tag_pattern_arg} ${include_paths_arg} ${exclude_path
 set -x
 NEW_RELEASE_PUBLISHED=false
 if git-cliff ${cliff_args} --bump --unreleased ; then NEW_RELEASE_PUBLISHED=true; fi
+set +x
 
 NEW_RELEASE_GIT_TAG=$(git-cliff ${cliff_args} --bump --unreleased --context | jq -r '.[0].version')
 NEW_RELEASE_VERSION=${NEW_RELEASE_GIT_TAG/#${tag_prefix}/}
