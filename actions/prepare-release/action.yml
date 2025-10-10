@@ -49,7 +49,7 @@ outputs:
     value: ${{ steps.semantic_release.outputs.new_release_version }}
   new_release_git_tag:
     description: "New release git tag"
-    value: ${{ steps.semantic_release.outputs.new_release_version }}
+    value: ${{ steps.semantic_release.outputs.new_release_git_tag }}
   new_release_notes:
     description: "New release changelog"
     value: ${{ steps.semantic_release.outputs.new_release_notes }}
@@ -73,11 +73,11 @@ runs:
       id: semantic_release
       shell: bash
       run: |
-        bash ${{ github.action_path }}/git_cliff.sh \
-          -c '${{ github.action_path }}/cliff.toml' \
-          -t '${{ inputs.tag_prefix }}' \
-          -i '${{ inputs.include_paths }}' \
-          -e '${{ inputs.exclude_paths }}'
+        python ${{ github.action_path }}/git_cliff.py \
+          --config '${{ github.action_path }}/cliff.toml' \
+          --tag-prefix '${{ inputs.tag_prefix }}' \
+          --include-paths '${{ inputs.include_paths }}' \
+          --exclude-paths '${{ inputs.exclude_paths }}'
     - name: Bump version in YAML
       if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) && fromJson(inputs.bump_version_yaml) }}
       shell: bash

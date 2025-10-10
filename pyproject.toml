@@ -1,0 +1,31 @@
+# UV and extra packages are used for testing only.
+[project]
+name = "gha-reusable"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.1",
+]
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "ALL"
+]
+per-file-ignores = { "**/*_test.py" = ["S101", "D", "ANN", "INP001", "EXE001", "SLF001", "PLR2004"] }
+ignore = [
+    # Following are fine
+    "D103",
+    # Following are python2 -> python3 warnings. Ignoring since modules should work with python2 (best effort)
+    "UP001", "UP006", "UP010",
+]
+
+[tool.uv.sources]
+aar-doc = { git = "https://github.com/telekom-mms/Automated-Ansible-Role-Documentation.git", rev = "main" }
