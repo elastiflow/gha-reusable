@@ -35,7 +35,7 @@ def parse_tag(git_tag: str) -> str:
     )
 
 
-def gen_incl_excl_paths(arg: str, param: str) -> str:
+def gen_path_args(arg: str, param: str) -> str:
     return " ".join([f"{arg}={p}" for p in param.split(",")])
 
 
@@ -81,8 +81,8 @@ if __name__ == "__main__":
 
     cliff_config_arg = f"--config={args.config}"
     cliff_tag_pattern_arg = f"--tag-pattern=^{args.tag_prefix}.+"
-    cliff_include_path_arg = gen_incl_excl_paths("--include-path", args.include_paths)
-    cliff_exclude_path_arg = gen_incl_excl_paths("--exclude-path", args.exclude_paths)
+    cliff_include_path_arg = gen_path_args("--include-path", args.include_paths)
+    cliff_exclude_path_arg = gen_path_args("--exclude-path", args.exclude_paths)
     cliff_args = f"{cliff_config_arg} {cliff_tag_pattern_arg} {cliff_include_path_arg} {cliff_exclude_path_arg}"
 
     # Fill the outputs

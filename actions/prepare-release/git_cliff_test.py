@@ -2,7 +2,7 @@ import os
 import pathlib
 
 import pytest
-from git_cliff import from_git_cliff_context, gen_gha_output, gen_incl_excl_paths, get_by_dot, parse_tag
+from git_cliff import from_git_cliff_context, gen_gha_output, gen_path_args, get_by_dot, parse_tag
 
 
 @pytest.mark.parametrize(
@@ -50,8 +50,8 @@ def test_parse_tag(git_tag, want):
         ("--include-path", "charts/awesome-app/**/*", "--include-path=charts/awesome-app/**/*"),
     ],
 )
-def test_gen_incl_excl_paths(arg, param, want):
-    assert gen_incl_excl_paths(arg, param) == want
+def test_gen_path_args(arg, param, want):
+    assert gen_path_args(arg, param) == want
 
 
 def _load_git_cliff_context(path: str) -> str:
