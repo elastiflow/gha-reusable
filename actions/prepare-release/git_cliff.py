@@ -27,16 +27,18 @@ def get_by_dot(d: dict, key: str) -> str:
 
 def parse_tag(git_tag: str) -> str:
     """Strip prefix from a semver tag and output only version."""
-    # https://regex101.com/r/NisV7D/2
+    # https://regex101.com/r/NisV7D/4
     return re.sub(
-        r"(?:[a-z]|-)+?([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(?:-(?:rc|alpha|beta)(?:\.[0-9]{1,3})?)?)",
+        r"(?:[a-z]|-)+?([0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}(?:-(?:rc|alpha|beta)\.?(?:(?:[0-9]{1,3}\.?)?)+)?)",
         r"\1",
         git_tag,
     )
 
 
 def gen_path_args(arg: str, param: str) -> str:
-    return " ".join([f"{arg}={p}" for p in param.split(",")])
+    if not param or not param.strip():
+        return ""
+    return " ".join([f"{arg}={p}" for p in param.split(",") if p.strip()])
 
 
 def run_git_cliff(args: str, exit_failure: bool = True) -> subprocess.CompletedProcess[str]:  # noqa: FBT001,FBT002
@@ -99,14 +101,24 @@ if __name__ == "__main__":
     )
     last_release_version = parse_tag(last_release_git_tag)
 
-    out = gen_gha_output(
-        new_release_published=new_release_published,
-        new_release_git_tag=new_release_git_tag,
-        new_release_version=new_release_version,
-        new_release_notes=new_release_notes,
-        last_release_git_tag=last_release_git_tag,
-        last_release_version=last_release_version,
-    )
+    if new_release_published:
+        out = gen_gha_output(
+            new_release_published=new_release_published,
+            new_release_git_tag=new_release_git_tag,
+            new_release_version=new_release_version,
+            new_release_notes=new_release_notes,
+            last_release_git_tag=last_release_git_tag,
+            last_release_version=last_release_version,
+        )
+    else:
+        out = gen_gha_output(
+            new_release_published=False,
+            new_release_git_tag="",
+            new_release_version="",
+            new_release_notes="",
+            last_release_git_tag="",
+            last_release_version="",
+        )
 
     print(out)  # noqa: T201
     if os.getenv("GITHUB_OUTPUT"):

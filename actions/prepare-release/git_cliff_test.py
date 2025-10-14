@@ -28,10 +28,13 @@ def test_get_by_dot(d, key, want):
     ("git_tag", "want"),
     [
         ("v0.1.0", "0.1.0"),
+        ("v0.1.0-beta", "0.1.0-beta"),
         ("v0.1.0-beta.1", "0.1.0-beta.1"),
         ("v0.1.0-rc.21", "0.1.0-rc.21"),
+        ("v0.1.0-rc.21.7.12", "0.1.0-rc.21.7.12"),
         ("my-awesome-app-0.10.0", "0.10.0"),
         ("my-awesome-app-0.10.0-rc.1", "0.10.0-rc.1"),
+        ("my-awesome-app-0.10.0-rc.1.2.4", "0.10.0-rc.1.2.4"),
     ],
 )
 def test_parse_tag(git_tag, want):
@@ -48,6 +51,7 @@ def test_parse_tag(git_tag, want):
         ),
         ("--include-path", "**/*", "--include-path=**/*"),
         ("--include-path", "charts/awesome-app/**/*", "--include-path=charts/awesome-app/**/*"),
+        ("--include-path", "", ""),
     ],
 )
 def test_gen_path_args(arg, param, want):
