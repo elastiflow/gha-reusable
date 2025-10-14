@@ -22,9 +22,6 @@ inputs:
       Exclude paths to determine related commits, comma-separated list
       Used as the --exclude-path values for `git-cliff` (globs supported), for example:
       exclude_path: 'charts/chart-one/**/*,charts/chart-two/**/*'
-  add_git_notes:
-    default: "false"
-    description: "Add and push \"semantic-release\" git notes to determine release channel. Should be `true` if release is going to be done"
   changelog_update:
     default: "false"
     description: "Update changelog"
@@ -52,7 +49,7 @@ outputs:
     value: ${{ steps.semantic_release.outputs.new_release_version }}
   new_release_git_tag:
     description: "New release git tag"
-    value: ${{ steps.semantic_release.outputs.new_release_version }}
+    value: ${{ steps.semantic_release.outputs.new_release_git_tag }}
   new_release_notes:
     description: "New release changelog"
     value: ${{ steps.semantic_release.outputs.new_release_notes }}
@@ -76,11 +73,11 @@ runs:
       id: semantic_release
       shell: bash
       run: |
-        bash ${{ github.action_path }}/git_cliff.sh \
-          -c '${{ github.action_path }}/cliff.toml' \
-          -t '${{ inputs.tag_prefix }}' \
-          -i '${{ inputs.include_paths }}' \
-          -e '${{ inputs.exclude_paths }}'
+        python ${{ github.action_path }}/git_cliff.py \
+          --config '${{ github.action_path }}/cliff.toml' \
+          --tag-prefix '${{ inputs.tag_prefix }}' \
+          --include-paths '${{ inputs.include_paths }}' \
+          --exclude-paths '${{ inputs.exclude_paths }}'
     - name: Bump version in YAML
       if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) && fromJson(inputs.bump_version_yaml) }}
       shell: bash
