@@ -87,21 +87,22 @@ if __name__ == "__main__":
     cliff_exclude_path_arg = gen_path_args("--exclude-path", args.exclude_paths)
     cliff_args = f"{cliff_config_arg} {cliff_tag_pattern_arg} {cliff_include_path_arg} {cliff_exclude_path_arg}"
 
-    # Fill the outputs
+    # Determine if a new release is published
     new_release_published = run_git_cliff(f"{cliff_args} --bump --unreleased", exit_failure=False).returncode == 0
-    new_release_git_tag = from_git_cliff_context(
-        run_git_cliff(f"{cliff_args} --bump --unreleased --context").stdout,
-        "version",
-    )
-    new_release_version = parse_tag(new_release_git_tag)
-    new_release_notes = run_git_cliff(f"{cliff_args} --bump --unreleased").stdout
-    last_release_git_tag = from_git_cliff_context(
-        run_git_cliff(f"{cliff_args} --bump --unreleased --context").stdout,
-        "previous.version",
-    )
-    last_release_version = parse_tag(last_release_git_tag)
 
     if new_release_published:
+        # Fill the outputs
+        new_release_git_tag = from_git_cliff_context(
+            run_git_cliff(f"{cliff_args} --bump --unreleased --context").stdout,
+            "version",
+        )
+        new_release_version = parse_tag(new_release_git_tag)
+        new_release_notes = run_git_cliff(f"{cliff_args} --bump --unreleased").stdout
+        last_release_git_tag = from_git_cliff_context(
+            run_git_cliff(f"{cliff_args} --bump --unreleased --context").stdout,
+            "previous.version",
+        )
+        last_release_version = parse_tag(last_release_git_tag)
         out = gen_gha_output(
             new_release_published=new_release_published,
             new_release_git_tag=new_release_git_tag,
