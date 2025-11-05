@@ -5,8 +5,8 @@ inputs:
     default: "false"
     description: Should a pre-release happen (${version}-alpha.1, ${version}-alpha.2, ...) instead of normal release
   tag_prefix:
-    default: "v"
-    description: Tag prefix to parse/create
+    default: ""
+    description: Tag prefix to parse/create, commonly empty, module name if monorepo, or "v"
   git_cliff_version:
     default: "2.10.1"
     description: "git-cliff version"
