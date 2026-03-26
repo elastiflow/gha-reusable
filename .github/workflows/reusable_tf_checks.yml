@@ -44,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Run trivy config scan
-        uses: aquasecurity/trivy-action@0.32.0
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1
         with:
           github-pat: ${{ secrets.GITHUB_TOKEN }}
           scan-type: config
