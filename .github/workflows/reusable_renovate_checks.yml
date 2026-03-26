@@ -1,0 +1,14 @@
+on:
+  workflow_call:
+
+jobs:
+  renovate_config_validator:
+    name: renovate config validator
+    runs-on: ubuntu-latest
+    container:
+      image: renovate/renovate:latest
+      options: --user root # root is needed for checkout to work
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Validate Renovate config
+        run: renovate-config-validator --strict
