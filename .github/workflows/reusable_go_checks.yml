@@ -75,9 +75,9 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run Tidy
@@ -95,9 +95,9 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run goimports
@@ -111,9 +111,9 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run Staticcheck
@@ -131,13 +131,13 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Security Scan
-        uses: securego/gosec@v2.22.5
+        uses: securego/gosec@223e19b8856e00f02cc67804499a83f77e208f3c
         with:
           args: ${{ inputs.gosec_args }}
   semgrep:
@@ -148,7 +148,7 @@ jobs:
       image: returntocorp/semgrep
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
       - name: semgrep scan
         run: ${{ inputs.semgrep_cmd }}
   unit_test:
@@ -157,11 +157,11 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run tests
@@ -180,11 +180,11 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run tests

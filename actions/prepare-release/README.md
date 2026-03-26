@@ -1,6 +1,6 @@
 # Overview
 
-`prepare-release` is the opinionated way to generate [semver](https://semver.org/) version number and changelog using [git-cliff](https://git-cliff.org/docs/).  
+`prepare-release` is the opinionated way to generate [semver](https://semver.org/) version number and changelog using [git-cliff](https://git-cliff.org/docs/).
 Action supports:
 
 - Generate and update the Changelog
@@ -22,7 +22,7 @@ It is expected this action to be used with other actions to perform tag and rele
       contents: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
         with:
           fetch-depth: 0 # Required, git-cliff uses the local git repo to read through tags and commits
       - name: Prepare Release
