@@ -101,6 +101,8 @@ jobs:
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run goimports
+        env:
+          GOTOOLCHAIN: auto
         run: |
           go install golang.org/x/tools/cmd/goimports@latest
           goimports -l -w ./
@@ -117,6 +119,8 @@ jobs:
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run Staticcheck
+        env:
+          GOTOOLCHAIN: auto
         run: |
           go install honnef.co/go/tools/cmd/staticcheck@latest
           find . -type f -name 'go.mod' | while read -r svc; do
