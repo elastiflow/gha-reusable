@@ -9,14 +9,11 @@ on:
         type: string
         default: "semgrep scan --config auto --error"
         description: "Semgrep command to run"
-      unit_test_cmd:
+      unit_test_args:
         type: string
-        default: "make test"
-        description: "Golang unit test command to run"
-      unit_test_report_coverage_cmd:
-        type: string
-        default: "make report-coverage"
-        description: "Command to report the unit tests coverage"
+        default: |
+          -race -cover -skip="^(TestIntegration|TestE2E).*" ./... -args -test.gocoverdir=./
+        description: "Golang unit test args (go test ARGS)"
       unit_test_runs-on:
         type: string
         default: ubuntu-latest
@@ -25,10 +22,11 @@ on:
         type: boolean
         default: false
         description: "Golang integration test command to run"
-      integration_test_cmd:
+      integration_test_args:
         type: string
-        default: "make test-integration"
-        description: "Golang integration test command to run"
+        default: |
+          -race -cover -skip="^(TestIntegration|TestE2E).*" ./... -args -test.gocoverdir=./
+        description: "Golang unit test args (go test ARGS)"
       integration_test_runs-on:
         type: string
         default: ubuntu-latest
@@ -169,7 +167,9 @@ jobs:
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run tests
-        run: ${{ inputs.unit_test_cmd }}
+        env:
+          ARGS: ${{ inputs.unit_test_args }}
+        run: "go test ${ARGS}"
       - name: Report coverage
         if: always()
         run: |
@@ -192,4 +192,6 @@ jobs:
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run tests
-        run: ${{ inputs.integration_test_cmd }}
+        env:
+          ARGS: ${{ inputs.unit_test_args }}
+        run: "go test ${ARGS}"
