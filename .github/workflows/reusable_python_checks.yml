@@ -4,7 +4,7 @@ on:
       unit_test_args:
         type: string
         default: "--cov=. --cov-report=xml:coverage.xml"
-        description: "Command to run your unit tests"
+        description: "Unit tests args (uv run pytest ARGS)"
       runs-on:
         type: string
         default: ubuntu-latest
