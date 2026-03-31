@@ -75,8 +75,8 @@ jobs:
         run: uv sync --dev
       - name: Run unit tests
         env:
-          UNIT_TEST_ARGS: ${{ inputs.unit_test_args }}
-        run: uv run pytest ${UNIT_TEST_ARGS}
+          ARGS: ${{ inputs.unit_test_args }}
+        run: uv run pytest ${ARGS}
       - name: SonarCloud Scan
         if: ${{ inputs.sonarcloud_run }}
         # nosemgrep: detected-sonarqube-docs-api-key, false positive
