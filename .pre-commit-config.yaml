@@ -10,3 +10,8 @@ repos:
         files: \.(json)$
       - id: check-yaml
         files: \.(yaml|yml)$
+  - repo: https://github.com/semgrep/pre-commit
+    rev: 'v1.156.0'
+    hooks:
+      - id: semgrep
+        entry: semgrep
