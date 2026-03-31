@@ -1,0 +1,122 @@
+---
+name: Release
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+on:
+  push:
+    branches:
+      - main
+
+env:
+  TAG_PREFIX: "v"
+
+jobs:
+  # Detect if a commit was made from a release PR with title like '[release v0.1.1] (#49)'
+  release_or_pr:
+    name: Release or Release PR?
+    runs-on: ubuntu-latest
+    outputs:
+      is_release: ${{ steps.release_or_pr.outputs.is_release }}
+    steps:
+      - id: release_or_pr
+        env:
+          COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
+        run: |
+          cat > /tmp/commit_message <<- EOF
+          ${COMMIT_MESSAGE}
+          EOF
+          cat /tmp/commit_message
+          # https://regex101.com/r/1z85UX/3
+          echo $(grep -Pq '^\[release .+\] \(#[0-9]{1,5}\)$' /tmp/commit_message && echo true || echo false) > /tmp/is_release
+          echo "is_release=$(cat /tmp/is_release)" >> $GITHUB_OUTPUT
+
+  release_pr_create:
+    name: Release PR create
+    needs: [release_or_pr]
+    if: ${{ ! fromJson(needs.release_or_pr.outputs.is_release) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - name: Prepare Release
+        id: prepare_release
+        uses: elastiflow/gha-reusable/actions/prepare-release@v0
+        with:
+          tag_prefix: "${{ env.TAG_PREFIX }}"
+          changelog_update: true
+      - name: Create Pull Request
+        if: ${{ fromJson(steps.prepare_release.outputs.new_release_published) }}
+        uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.8
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          base: "${{ github.ref_name }}"
+          branch: release-from-${{ github.ref_name }}
+          title: '[release ${{ steps.prepare_release.outputs.new_release_git_tag }}]'
+          body: |
+            # Description
+            Release the ${{ steps.prepare_release.outputs.new_release_git_tag }} version
+
+            # Changelog
+            ${{ steps.prepare_release.outputs.new_release_notes }}
+
+  release:
+    name: Release
+    needs: [release_or_pr]
+    if: ${{ fromJson(needs.release_or_pr.outputs.is_release) }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      new_release_published: ${{ steps.prepare_release.outputs.new_release_published }}
+      new_release_version: ${{ steps.prepare_release.outputs.new_release_version }}
+      new_release_git_tag: ${{ steps.prepare_release.outputs.new_release_git_tag }}
+      new_release_notes: ${{ steps.prepare_release.outputs.new_release_notes }}
+    env:
+      CHARTS_DIR: charts/mermin
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          fetch-depth: 0
+      - name: Prepare Release
+        id: prepare_release
+        uses: elastiflow/gha-reusable/actions/prepare-release@v0
+        with:
+          tag_prefix: "${{ env.TAG_PREFIX }}"
+          exclude_paths: "docs/**/*,charts/mermin-netobserv-os-stack/**/*,charts/traffic-gen/**/*"
+      - name: Create GH release
+        if: ${{ fromJson(steps.prepare_release.outputs.new_release_published) }}
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8
+        with:
+          name: ${{ steps.prepare_release.outputs.new_release_git_tag }}
+          tag_name: ${{ steps.prepare_release.outputs.new_release_git_tag }}
+          body: |
+            ${{ steps.prepare_release.outputs.new_release_notes }}
+          target_commitish: ${{ github.ref_name }}
+          preserve_order: true
+          make_latest: true
+      - name: Parse major version and force-push major tag
+        if: ${{ fromJson(steps.prepare_release.outputs.new_release_published) }}
+        env:
+          NEW_VERSION: ${{ steps.prepare_release.outputs.new_release_version }}
+          NEW_TAG: ${{ steps.prepare_release.outputs.new_release_git_tag }}
+        run: |
+          set -e
+          echo "Parsing major version from ${NEW_VERSION}"
+          MAJOR=$(echo "${NEW_VERSION}" | grep -oE '^[0-9]+')
+          if [ -z "$MAJOR" ]; then
+            echo "Failed to parse major version from ${NEW_VERSION}" >&2
+            exit 1
+          fi
+          MAJOR_TAG="${TAG_PREFIX}${MAJOR}"
+          echo "Force-pushing tag ${MAJOR_TAG} to ${NEW_TAG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f "${MAJOR_TAG}" "${NEW_TAG}"
+          git push --force origin "${MAJOR_TAG}"
