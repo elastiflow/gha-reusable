@@ -18,7 +18,7 @@ on:
         description: Comma separated list of directories where traversal is skipped
       tflint_config:
         type: string
-        default: ${GITHUB_WORKSPACE}/.tflint.hcl
+        default: .tflint.hcl
         description: TFLint config file path
       tflint_args:
         type: string
@@ -35,7 +35,11 @@ jobs:
       - name: Setup terraform
         uses: hashicorp/setup-terraform@5e8dbf3c6d9deaf4193ca7a8fb23f2ac83bb6c85
       - name: Run terraform fmt
-        run: terraform fmt ${{ inputs.tf_fmt_args }} ${{ inputs.working_directory }}
+        env:
+          ARGS: ${{ inputs.tf_fmt_args }}
+          WORKING_DIRECTORY: ${{ inputs.working_directory }}
+        run: |
+          terraform fmt ${ARGS} "${WORKING_DIRECTORY}"
 
   trivy_config_scan:
     name: run trivy config scan
@@ -69,9 +73,16 @@ jobs:
         with:
           tflint_version: latest
       - name: Init TFLint
-        run: tflint --init -c ${{ inputs.tflint_config }}
+        env:
+          CONFIG: ${{ inputs.tflint_config }}
+        run: |
+          tflint --init -c "${GITHUB_WORKSPACE}/${CONFIG}"
       - name: Run TFLint
-        run: tflint -c ${{ inputs.tflint_config }} ${{ inputs.tflint_args }}
+        env:
+          CONFIG: ${{ inputs.tflint_config }}
+          ARGS: ${{ inputs.tflint_args }}
+        run: |
+          tflint -c "${GITHUB_WORKSPACE}/${CONFIG}" ${ARGS}
 
   terraform_docs:
     name: run terraform-docs
