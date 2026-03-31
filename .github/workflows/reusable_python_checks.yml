@@ -1,14 +1,10 @@
 on:
   workflow_call:
     inputs:
-      unit_test_cmd:
+      unit_test_args:
         type: string
-        default: "uv run pytest"
-        description: "Command to run your unit tests"
-      unit_test_report_coverage_cmd:
-        type: string
-        default: "uv run pytest --cov=. --cov-report=xml:coverage.xml"
-        description: "Command to report unit test coverage"
+        default: "--cov=. --cov-report=xml:coverage.xml"
+        description: "Unit tests args (uv run pytest ARGS)"
       runs-on:
         type: string
         default: ubuntu-latest
@@ -75,14 +71,15 @@ jobs:
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405
         with:
           python-version-file: "pyproject.toml"
-      - name: Install the project
+      - name: Install the project dependencies
         run: uv sync --dev
       - name: Run unit tests
-        run: ${{ inputs.unit_test_cmd }}
-      - name: Generate coverage report
-        run: ${{ inputs.unit_test_report_coverage_cmd }}
+        env:
+          ARGS: ${{ inputs.unit_test_args }}
+        run: uv run pytest ${ARGS}
       - name: SonarCloud Scan
         if: ${{ inputs.sonarcloud_run }}
+        # nosemgrep: detected-sonarqube-docs-api-key, false positive
         uses: SonarSource/sonarqube-scan-action@a31c9398be7ace6bbfaf30c0bd5d415f843d45e9
         with:
           args: >
