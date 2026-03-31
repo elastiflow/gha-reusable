@@ -66,37 +66,50 @@ runs:
   steps:
     - name: Install git-cliff
       shell: bash
+      env:
+        GIT_CLIFF_VERSION: ${{ inputs.git_cliff_version }}
       run: |
-        wget -c -O - https://github.com/orhun/git-cliff/releases/download/v${{ inputs.git_cliff_version }}/git-cliff-${{ inputs.git_cliff_version }}-x86_64-unknown-linux-gnu.tar.gz \
-          | tar xfvpz - --directory /usr/local/bin --strip-components=1 git-cliff-${{ inputs.git_cliff_version }}/git-cliff
+        wget -c -O - "https://github.com/orhun/git-cliff/releases/download/v${GIT_CLIFF_VERSION}/git-cliff-${GIT_CLIFF_VERSION}-x86_64-unknown-linux-gnu.tar.gz" \
+          | tar xfvpz - --directory /usr/local/bin --strip-components=1 "git-cliff-${GIT_CLIFF_VERSION}/git-cliff"
     - name: Semantic Release attributes (git-cliff)
       id: semantic_release
       shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        TAG_PREFIX: ${{ inputs.tag_prefix }}
+        INCLUDE_PATHS: ${{ inputs.include_paths }}
+        EXCLUDE_PATHS: ${{ inputs.exclude_paths }}
       run: |
-        python ${{ github.action_path }}/git_cliff.py \
-          --config '${{ github.action_path }}/cliff.toml' \
-          --tag-prefix '${{ inputs.tag_prefix }}' \
-          --include-paths '${{ inputs.include_paths }}' \
-          --exclude-paths '${{ inputs.exclude_paths }}'
+        python "${ACTION_PATH}/git_cliff.py" \
+          --config "${ACTION_PATH}/cliff.toml" \
+          --tag-prefix "${TAG_PREFIX}" \
+          --include-paths "${INCLUDE_PATHS}" \
+          --exclude-paths "${EXCLUDE_PATHS}"
     - name: Bump version in YAML
       if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) && fromJson(inputs.bump_version_yaml) }}
       shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        BUMP_VERSION_YAML_PATH: ${{ inputs.bump_version_yaml_path }}
+        BUMP_VERSION_YAML_KEY: ${{ inputs.bump_version_yaml_key }}
       run: |
         echo 'Bump version in YAML'
-        sh ${{ github.action_path }}/bump_yaml.sh \
-          ${{ inputs.bump_version_yaml_path }} \
-          ${{ inputs.bump_version_yaml_key }} \
-          ${{ steps.semantic_release.outputs.new_release_version }}
+        sh "${ACTION_PATH}/bump_yaml.sh" \
+          "${BUMP_VERSION_YAML_PATH}" \
+          "${BUMP_VERSION_YAML_KEY}" \
+          "${{ steps.semantic_release.outputs.new_release_version }}"
     - name: Update the changelog
       if: ${{ fromJson(steps.semantic_release.outputs.new_release_published) && fromJson(inputs.changelog_update) }}
       shell: bash
+      env:
+        CHANGELOG_PATH: ${{ inputs.changelog_path }}
       run: |
         echo 'Update the changelog'
-        if [ ! -f '${{ inputs.changelog_path }}' ]; then touch '${{ inputs.changelog_path }}'; fi
+        if [ ! -f "${CHANGELOG_PATH}" ]; then touch "${CHANGELOG_PATH}"; fi
 
         cat > /tmp/chlog <<- EOF
         ${{ steps.semantic_release.outputs.new_release_notes }}
 
-        $(cat ${{ inputs.changelog_path }})
+        $(cat "${CHANGELOG_PATH}")
         EOF
-        mv /tmp/chlog ${{ inputs.changelog_path }}
+        mv /tmp/chlog "${CHANGELOG_PATH}"
