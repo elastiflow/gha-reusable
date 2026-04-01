@@ -79,7 +79,7 @@ runs:
         push: ${{ fromJson(inputs.push) }}
         labels: ${{ steps.meta.outputs.labels }}
     - name: Generate artifact attestation
-      uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32
+      uses: actions/attest-build-provenance@10334b5f1e684784025c3fc0a277c88c19089275
       if: ${{ fromJson(inputs.push) }}
       with:
         subject-name: ${{ inputs.registry }}/${{ inputs.image}}
