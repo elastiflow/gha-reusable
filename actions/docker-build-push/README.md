@@ -25,7 +25,7 @@ CI:
         }
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Build docker image
         uses: elastiflow/gha-reusable/actions/docker-build-push@v0
         with:
@@ -64,7 +64,7 @@ Release:
         }
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Build docker image
         uses: elastiflow/gha-reusable/actions/docker-build-push@v0
         with:
