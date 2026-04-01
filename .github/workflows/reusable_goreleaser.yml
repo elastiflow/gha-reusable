@@ -100,7 +100,7 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98
       - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
         with:
           token_format: "access_token"
