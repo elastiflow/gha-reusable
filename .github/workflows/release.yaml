@@ -41,7 +41,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: Prepare Release
@@ -81,7 +81,7 @@ jobs:
       CHARTS_DIR: charts/mermin
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: Prepare Release
@@ -92,7 +92,7 @@ jobs:
           exclude_paths: "docs/**/*,charts/mermin-netobserv-os-stack/**/*,charts/traffic-gen/**/*"
       - name: Create GH release
         if: ${{ fromJson(steps.prepare_release.outputs.new_release_published) }}
-        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8 # v2.3.2
         with:
           name: ${{ steps.prepare_release.outputs.new_release_git_tag }}
           tag_name: ${{ steps.prepare_release.outputs.new_release_git_tag }}
