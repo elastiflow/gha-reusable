@@ -100,27 +100,27 @@ jobs:
     runs-on: ${{ inputs.runs_on }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
-      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
         with:
           token_format: "access_token"
           project_id: ${{ inputs.gcp_ar_project_id }}
           workload_identity_provider: ${{ inputs.gcp_ar_pusher_workload_identity_provider }}
           service_account: ${{ inputs.gcp_ar_pusher_service_account }}
       - name: Set up Cloud CLI
-        uses: 'google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db'
+        uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
         with:
           version: '>= 497.0.0'
           install_components: "beta"
-      - name: Configure GCP Docker AR auth
+      - name: Configure caching GCP Docker AR auth
         if: ${{ inputs.gcp_ar_registry_cache_enabled }}
-        # Having params in a given cli as env. vars. does not improve security without extra validation
-        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
-        run: 'gcloud --project ${{ inputs.gcp_ar_registry_cache_project_id }} auth configure-docker us-docker.pkg.dev'
+        env:
+          GCP_AR_REGISTRY_CACHE_PROJECT_ID: "${{ inputs.gcp_ar_registry_cache_project_id }}"
+        run: 'gcloud --project ${GCP_AR_REGISTRY_CACHE_PROJECT_ID} auth configure-docker us-docker.pkg.dev'
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd
+        uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
       - name: Build in Docker
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         if: ${{ !inputs.gcp_ar_registry_cache_enabled }}
         with:
           file: ${{ inputs.build_dockerfile }}
@@ -140,7 +140,7 @@ jobs:
             "gpg_key=${{ secrets.build_gpg_key }}"
             "gpg_passphrase=${{ secrets.build_gpg_passphrase }}"
       - name: Build in Docker with GCP AR cache
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294
+        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
         if: ${{ inputs.gcp_ar_registry_cache_enabled }}
         with:
           file: ${{ inputs.build_dockerfile }}
@@ -164,26 +164,30 @@ jobs:
           docker run --rm -v `pwd`:/dst --name artifacter not-exists.elastiflow.com/builder sh -c 'cp -R dist /dst/'
       - name: Publish to APT repository
         if: ${{ inputs.publish_apt }}
-        # Having params in a given cli as env. vars. does not improve security without extra validation
-        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
+        env:
+          GCP_AR_PROJECT_ID: "${{ inputs.gcp_ar_project_id }}"
+          GCP_AR_LOCATION: "${{ inputs.gcp_ar_location }}"
+          GCP_AR_APT_REPOSITORY: "${{ inputs.gcp_ar_apt_repository }}"
         run: |
           find dist/ -type f -name '*.deb' -print0 | while IFS= read -r -d '' pkg_path; do
-              gcloud --project "${{ inputs.gcp_ar_project_id }}" \
-                  artifacts apt upload "${{ inputs.gcp_ar_apt_repository }}" \
-                  --location="${{ inputs.gcp_ar_location }}" --source=${pkg_path}
+              gcloud --project "${GCP_AR_PROJECT_ID}" \
+                  artifacts apt upload "${GCP_AR_APT_REPOSITORY}" \
+                  --location="${GCP_AR_LOCATION}" --source=${pkg_path}
           done
       - name: Publish to YUM repository
         if: ${{ inputs.publish_yum }}
-        # Having params in a given cli as env. vars. does not improve security without extra validation
-        # nosemgrep: yaml.github-actions.security.run-shell-injection.run-shell-injection
+        env:
+          GCP_AR_PROJECT_ID: "${{ inputs.gcp_ar_project_id }}"
+          GCP_AR_LOCATION: "${{ inputs.gcp_ar_location }}"
+          GCP_AR_YUM_REPOSITORY: "${{ inputs.gcp_ar_yum_repository }}"
         run: |
           find dist/ -type f -name '*.rpm' -print0 | while IFS= read -r -d '' pkg_path; do
-              gcloud --project "${{ inputs.gcp_ar_project_id }}" \
-                  artifacts yum upload "${{ inputs.gcp_ar_yum_repository }}" \
-                  --location="${{ inputs.gcp_ar_location }}" --source=${pkg_path}
+              gcloud --project "${GCP_AR_PROJECT_ID}" \
+                  artifacts yum upload "${GCP_AR_YUM_REPOSITORY}" \
+                  --location="${GCP_AR_LOCATION}" --source=${pkg_path}
           done
       - name: Create GH release
-        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         if: ${{ inputs.publish_gh }}
         with:
           preserve_order: true

@@ -5,18 +5,15 @@ on:
         type: string
         default: "-severity high -exclude-dir examples -exclude=G115 ./..."
         description: "gosec tool command line arguments"
-      semgrep_cmd:
+      semgrep_args:
         type: string
-        default: "semgrep scan --config auto --error"
-        description: "Semgrep command to run"
-      unit_test_cmd:
+        default: "scan --config auto --error"
+        description: "Semgrep args"
+      unit_test_args:
         type: string
-        default: "make test"
-        description: "Golang unit test command to run"
-      unit_test_report_coverage_cmd:
-        type: string
-        default: "make report-coverage"
-        description: "Command to report the unit tests coverage"
+        default: |
+          -race -cover -skip="^(TestIntegration|TestE2E).*" ./... -args -test.gocoverdir=./
+        description: "Golang unit test args (go test ARGS)"
       unit_test_runs-on:
         type: string
         default: ubuntu-latest
@@ -25,10 +22,11 @@ on:
         type: boolean
         default: false
         description: "Golang integration test command to run"
-      integration_test_cmd:
+      integration_test_args:
         type: string
-        default: "make test-integration"
-        description: "Golang integration test command to run"
+        default: |
+          -race -run="^TestIntegration.*" ./...
+        description: "Golang integration test args (go test ARGS)"
       integration_test_runs-on:
         type: string
         default: ubuntu-latest
@@ -75,15 +73,15 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run Tidy
         run: |
-          find . -type f -name 'go.mod' | while read -r svc; do
-            cd $(dirname "${svc}");
+          go list -m -f '{{.Dir}}' | while read -r svc; do
+            cd "${svc}";
             echo "In $(pwd)";
             go mod tidy;
             cd -;
@@ -95,14 +93,17 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run goimports
+        env:
+          GOTOOLCHAIN: auto
+        # v0.43.0
         run: |
-          go install golang.org/x/tools/cmd/goimports@latest
+          go install golang.org/x/tools/cmd/goimports@24a8e95
           goimports -l -w ./
           git diff --exit-code
   staticcheck:
@@ -111,33 +112,31 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run Staticcheck
+        env:
+          GOTOOLCHAIN: auto
+        # v0.7.0
         run: |
-          go install honnef.co/go/tools/cmd/staticcheck@latest
-          find . -type f -name 'go.mod' | while read -r svc; do
-            cd $(dirname "${svc}");
-            echo "In $(pwd)";
-            staticcheck ./...;
-            cd -;
-          done
+          go install honnef.co/go/tools/cmd/staticcheck@ff63afa
+          staticcheck $(go list -m -f '{{.Dir}}' | sed 's|$|/... |')
   gosec:
     name: 'gosec'
     runs-on: ${{ inputs.runs-on }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Security Scan
-        uses: securego/gosec@223e19b8856e00f02cc67804499a83f77e208f3c
+        uses: securego/gosec@223e19b8856e00f02cc67804499a83f77e208f3c # v2.25.0
         with:
           args: ${{ inputs.gosec_args }}
   semgrep:
@@ -148,30 +147,61 @@ jobs:
       image: returntocorp/semgrep
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: semgrep scan
-        run: ${{ inputs.semgrep_cmd }}
+        env:
+          ARGS: ${{ inputs.semgrep_args }}
+        run: "semgrep ${ARGS}"
   unit_test:
     name: 'unit test'
     runs-on: ${{ inputs.unit_test_runs-on }}
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run tests
-        run: ${{ inputs.unit_test_cmd }}
+        env:
+          ARGS: ${{ inputs.unit_test_args }}
+        run: "go test ${ARGS}"
+      - name: Write coverage threshold config
+        if: always()
+        uses: DamianReeves/write-file-action@6929a9a6d1807689191dcc8bbe62b54d70a32b42
+        with:
+          path: .testcoverage.yaml
+          write-mode: preserve
+          contents: |
+            profile: coverage.out
+            threshold:
+              file: 70
+              package: 75
+              total: 80
+      - name: Enforce coverage threshold
+        if: always()
+        env:
+           GOTOOLCHAIN: auto
+        # v2.18.4
+        run: |
+          go install github.com/vladopajic/go-test-coverage/v2@f190f66
+          go tool covdata textfmt -i=./ -o=coverage.out
+          go-test-coverage --config=.testcoverage.yaml
       - name: Report coverage
         if: always()
         run: |
           echo "Coverage:" >> ${GITHUB_STEP_SUMMARY}
           echo '```' >> ${GITHUB_STEP_SUMMARY}
-          ${{ inputs.unit_test_report_coverage_cmd }} >> ${GITHUB_STEP_SUMMARY}
+          go tool covdata percent -i=./ >> ${GITHUB_STEP_SUMMARY}
+          echo '```' >> ${GITHUB_STEP_SUMMARY}
+
+          echo >> ${GITHUB_STEP_SUMMARY}
+          echo "Coverage thresholds:" >> ${GITHUB_STEP_SUMMARY}
+          echo '```' >> ${GITHUB_STEP_SUMMARY}
+          go-test-coverage --config=.testcoverage.yaml >> ${GITHUB_STEP_SUMMARY}
           echo '```' >> ${GITHUB_STEP_SUMMARY}
   integration_test:
     name: 'integration test'
@@ -180,12 +210,14 @@ jobs:
     timeout-minutes: ${{ inputs.timeout-minutes }}
     steps:
       - name: Checkout
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
       - name: Setup Go
-        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
           go-version-file: ${{ inputs.go_version_file }}
       - name: Run tests
-        run: ${{ inputs.integration_test_cmd }}
+        env:
+          ARGS: ${{ inputs.unit_test_args }}
+        run: "go test ${ARGS}"

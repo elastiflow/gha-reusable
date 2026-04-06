@@ -38,6 +38,12 @@ inputs:
     description: "Use docker cache from GHA Cache, https://docs.docker.com/reference/cli/docker/buildx/build/#cache-from"
   cache_to:
     description: "Upload docker cache to GHA Cache, https://docs.docker.com/reference/cli/docker/buildx/build/#cache-to"
+  provenance:
+    default: "mode=max"
+    description: "Provenance attestation, https://docs.docker.com/engine/reference/commandline/buildx_build/#provenance"
+  sbom:
+    default: "true"
+    description: "Generate SBOM for the image, https://docs.docker.com/engine/reference/commandline/buildx_build/#sbom"
   # Sensitive values
   registry_username:
     description: "Docker registry username to authenticate with, uses https://github.com/docker/login-action?tab=readme-ov-file#about"
@@ -48,10 +54,10 @@ runs:
   using: "composite"
   steps:
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd
+      uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
     - name: Log in to the Container registry
       if: ${{ fromJson(inputs.push) }}
-      uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2
+      uses: docker/login-action@b45d80f862d83dbcd57f89517bcf500b2ab88fb2 # v4.0.0
       with:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.registry_username }}
@@ -59,12 +65,12 @@ runs:
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       if: ${{ fromJson(inputs.push) }}
-      uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf
+      uses: docker/metadata-action@030e881283bb7a6894de51c315a6bfe6a94e05cf # v6.0.0
       with:
         images: ${{ inputs.registry }}/${{ inputs.image }}
     - name: Build and push Docker image
       id: push
-      uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294
+      uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
       with:
         file: ${{ inputs.dockerfile }}
         platforms: ${{ inputs.platforms }}
@@ -77,11 +83,13 @@ runs:
         cache-to: ${{ inputs.cache_to }}
         load: ${{ fromJson(inputs.load) }}
         push: ${{ fromJson(inputs.push) }}
+        provenance: ${{ inputs.provenance }}
+        sbom: ${{ fromJson(inputs.sbom) }}
         labels: ${{ steps.meta.outputs.labels }}
     - name: Generate artifact attestation
-      uses: actions/attest-build-provenance@a2bbfa25375fe432b6a289bc6b6cd05ecd0c4c32
+      uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
       if: ${{ fromJson(inputs.push) }}
       with:
         subject-name: ${{ inputs.registry }}/${{ inputs.image}}
         subject-digest: ${{ steps.push.outputs.digest }}
-        push-to-registry: true
+        push-to-registry: ${{ fromJson(inputs.push) }}
