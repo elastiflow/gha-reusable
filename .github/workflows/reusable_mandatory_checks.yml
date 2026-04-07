@@ -1,0 +1,9 @@
+# An opinionated workflow to be ran in scope of the "ci.yml" workflows in the repos.
+# Main purpose is to make it easier to add mandatory checks to all repos using this workflow.
+on:
+  workflow_call:
+
+jobs:
+  sec_checks:
+    name: Security checks
+    uses: elastiflow/gha-reusable/.github/workflows/reusable_sec_checks.yml@v0
