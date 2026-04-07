@@ -118,5 +118,6 @@ jobs:
           echo "Force-pushing tag ${MAJOR_TAG} to ${NEW_TAG}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
+          git fetch --tags
           git tag -f "${MAJOR_TAG}" "${NEW_TAG}"
           git push --force origin "${MAJOR_TAG}"
