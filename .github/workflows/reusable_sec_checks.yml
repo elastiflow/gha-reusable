@@ -54,5 +54,5 @@ jobs:
           scan-type: config
           scan-ref: "${{ inputs.trivy_config_scan_ref }}"
           severity: "${{ inputs.trivy_config_scan_severity }}"
-          skip-dirs: "${{ inputs.trivy_config_scan_skip_dirs }}"
+          skip-dirs: 'docs'
           exit-code: '1'
