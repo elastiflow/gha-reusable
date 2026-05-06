@@ -5,6 +5,18 @@ on:
         type: string
         default: "scan --config auto --error"
         description: "Semgrep args"
+      trivy_config_scan_ref:
+        type: string
+        default: "."
+        description: "Trivy config scan reference"
+      trivy_config_scan_severity:
+        type: string
+        default: "HIGH,CRITICAL"
+        description: "Trivy config scan severity levels to fail on"
+      trivy_config_scan_skip_dirs:
+        type: string
+        default: "docs"
+        description: "Trivy config scan directories to skip"
       runs-on:
         type: string
         default: ubuntu-latest
@@ -28,3 +40,19 @@ jobs:
         env:
           ARGS: ${{ inputs.semgrep_args }}
         run: "semgrep ${ARGS}"
+
+  trivy_config:
+    name: 'trivy config scan'
+    runs-on: ${{ inputs.runs-on }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+      - name: Run Trivy config scan
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          scan-type: config
+          scan-ref: "${{ inputs.trivy_config_scan_ref }}"
+          severity: "${{ inputs.trivy_config_scan_severity }}"
+          skip-dirs: "${{ inputs.trivy_config_scan_skip_dirs }}"
+          exit-code: '1'
