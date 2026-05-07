@@ -110,7 +110,7 @@ runs:
       with:
         subject-name: ${{ inputs.registry }}/${{ inputs.image}}
         subject-digest: ${{ steps.build_push.outputs.digest }}
-        push-to-registry: ${{ fromJson(inputs.push) }}
+        push-to-registry: ${{ fromJson(inputs.push) || fromJson(inputs.push_attestation) }}
 
 outputs:
   digest:
