@@ -1,3 +1,14 @@
+## [v0.4.0] - 2026-05-08
+
+### Features
+
+- Add  config scan to a security checks (#49)
+- Add  param to  (#50)
+
+[v0.3.0..v0.4.0](https://github.com/elastiflow/gha-reusable/compare/v0.3.0...v0.4.0)
+
+
+
 ## [v0.3.0] - 2026-04-07
 
 ### Features
