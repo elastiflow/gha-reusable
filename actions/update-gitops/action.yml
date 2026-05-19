@@ -106,6 +106,7 @@ runs:
         echo "Committing changes"
         git add ./
 
+        echo "diff_present=$(git diff-index --quiet HEAD; echo $?)"
         echo "diff_present=$(git diff-index --quiet HEAD; echo $?)" >> $GITHUB_STEP_SUMMARY
         git diff-index --quiet HEAD || git commit -m "[auto] ${COMMIT_MESSAGE_HEADER}"
     # - name: Push changes
