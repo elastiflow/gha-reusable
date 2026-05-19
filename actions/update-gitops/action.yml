@@ -137,7 +137,7 @@ runs:
           git diff "HEAD~1" "HEAD" -- >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
         else
-          echo "GitOps branch \`${GITOPS_BRANCH}\` is already up to date
+          echo "GitOps branch \`${GITOPS_BRANCH}\` is already up to date"  >> $GITHUB_STEP_SUMMARY
           echo "- Commit SHA: \`${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
           echo "- Docker tag: \`${DOCKER_TAG_PREFIX}${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
         fi
