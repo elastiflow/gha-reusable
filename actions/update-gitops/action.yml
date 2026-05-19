@@ -106,12 +106,10 @@ runs:
         echo "Committing changes"
         git add ./
 
-        echo "diff_present=$(git diff-index --quiet HEAD; echo $?)"
-        echo "diff_present=$(git diff-index --quiet HEAD; echo $?)" >> $GITHUB_STEP_SUMMARY
+        echo "diff_present=$(git diff-index --quiet HEAD; echo $?)" >> $GITHUB_OUTPUT
         git diff-index --quiet HEAD || git commit -m "[auto] ${COMMIT_MESSAGE_HEADER}"
-    # - name: Push changes
     - name: Push changes
-      if: ${{ fromJson(inputs.push) && fromJson(steps.commit.outputs.committed) == 1 }}
+      if: ${{ fromJson(inputs.push) && fromJson(steps.commit.outputs.diff_present) == 1 }}
       shell: bash
       env:
         GITOPS_BRANCH: ${{ inputs.gitops_branch }}
@@ -128,12 +126,18 @@ runs:
       run: |
         echo "Setting GitHub Actions summary"
 
-        echo "GitOps branch \`${GITOPS_BRANCH}\` has been updated with the latest changes from \`origin/${DEFAULT_BRANCH}\`." >> $GITHUB_STEP_SUMMARY
-        echo "- New commit SHA: \`${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- New docker tag: \`${DOCKER_TAG_PREFIX}${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+        if [ `git log -5 --format=%H | wc -l` -gt 1 ]; then
+          echo "GitOps branch \`${GITOPS_BRANCH}\` has been updated with the latest changes from \`origin/${DEFAULT_BRANCH}\`." >> $GITHUB_STEP_SUMMARY
+          echo "- New commit SHA: \`${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- New docker tag: \`${DOCKER_TAG_PREFIX}${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
 
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Diff with previous version:" >> $GITHUB_STEP_SUMMARY
-        echo '```diff'  >> $GITHUB_STEP_SUMMARY
-        git diff "HEAD~1" "HEAD" -- >> $GITHUB_STEP_SUMMARY
-        echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Diff with previous revision:" >> $GITHUB_STEP_SUMMARY
+          echo '```diff'  >> $GITHUB_STEP_SUMMARY
+          git diff "HEAD~1" "HEAD" -- >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "GitOps branch \`${GITOPS_BRANCH}\` is already up to date
+          echo "- Commit SHA: \`${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker tag: \`${DOCKER_TAG_PREFIX}${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+        fi
