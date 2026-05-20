@@ -12,7 +12,7 @@ inputs:
     description: "Docker tag prefix to use in the manifests update, e.g. if commit SHA is used as a tag, then `commit_` can be used as a prefix"
   manifests_path:
     required: true
-    description: "Path to the manifests to update. Coma-separated list of paths are supported (no spaces)"
+    description: "Path to the manifests to update. Comma-separated list of paths are supported (no spaces)"
   bump_version_yaml_path:
     required: true
     description: |
