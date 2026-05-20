@@ -17,7 +17,7 @@ inputs:
     required: true
     description: |
       Path to the YAML where version should be bumped
-      Coma-separated list of files are supported (no spaces)
+      Comma-separated list of files are supported (no spaces)
   bump_version_yaml_key:
     required: true
     description: |
