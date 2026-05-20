@@ -22,7 +22,7 @@ inputs:
     required: true
     description: |
       Version key in the YAML file, in the [yq](https://mikefarah.gitbook.io/yq) format.
-      Coma-separated list of keys are supported (no spaces)
+      Comma-separated list of keys are supported (no spaces)
   git_config_email:
     default: "devops@elastiflow.com"
     description: "Git config email"
