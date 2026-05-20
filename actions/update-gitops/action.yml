@@ -1,0 +1,143 @@
+name: 'Update GitOps'
+description: 'Update manifests in the GitOps branch'
+inputs:
+  default_branch:
+    default: ""
+    description: "Default branch to update from, e.g. main. If not set (empty string), it will be determined automatically."
+  gitops_branch:
+    default: "gitops"
+    description: "GitOps branch to update"
+  docker_tag_prefix:
+    default: "commit_"
+    description: "Docker tag prefix to use in the manifests update, e.g. if commit SHA is used as a tag, then `commit_` can be used as a prefix"
+  manifests_path:
+    required: true
+    description: "Path to the manifests to update. Comma-separated list of paths are supported (no spaces)"
+  bump_version_yaml_path:
+    required: true
+    description: |
+      Path to the YAML where version should be bumped
+      Comma-separated list of files are supported (no spaces)
+  bump_version_yaml_key:
+    required: true
+    description: |
+      Version key in the YAML file, in the [yq](https://mikefarah.gitbook.io/yq) format.
+      Comma-separated list of keys are supported (no spaces)
+  git_config_email:
+    default: "devops@elastiflow.com"
+    description: "Git config email"
+  git_config_user_name:
+    default: "DevOps Elastiflow"
+    description: "Git config user name"
+  push:
+    default: "false"
+    description: "Update changelog"
+  github_token:
+    required: false
+    description: "GitHub token with write permissions to the repo, required if `push` is true"
+outputs:
+  new_commit_sha:
+    description: "New commit SHA after updating GitOps"
+    value: ${{ steps.set_attrs.outputs.commit_sha_short }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+    - name: Configure git
+      shell: bash
+      env:
+        GIT_CONFIG_EMAIL: ${{ inputs.git_config_email }}
+        GIT_CONFIG_USER_NAME: ${{ inputs.git_config_user_name }}
+      run: |
+        git config --global user.email "${GIT_CONFIG_EMAIL}"
+        git config --global user.name "${GIT_CONFIG_USER_NAME}"
+    - name: Set default branch
+      id: set_default_branch
+      shell: bash
+      run: |
+        echo "Setting default branch"
+        echo "default_branch=$(git remote show origin | sed -n '/HEAD branch/s/.*: //p')" >> $GITHUB_OUTPUT
+    - name: Set attrs
+      id: set_attrs
+      shell: bash
+      env:
+        DEFAULT_BRANCH: ${{ case(inputs.default_branch == '', steps.set_default_branch.outputs.default_branch, inputs.default_branch) }}
+      run: |
+        echo "Setting attributes"
+        git fetch origin ${DEFAULT_BRANCH} --depth=1
+
+        echo "default_branch=${DEFAULT_BRANCH}" >> $GITHUB_OUTPUT
+        echo "commit_sha_short=$(git rev-parse --short origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
+        echo "commit_message_header=$(git log -1 --pretty=%s origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
+    - name: Checkout GitOps branch
+      uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      with:
+        ref: ${{ inputs.gitops_branch }}
+    - name: Update manifests
+      shell: bash
+      env:
+        MANIFESTS_PATH: ${{ inputs.manifests_path }}
+        DEFAULT_BRANCH: ${{ steps.set_attrs.outputs.default_branch }}
+      run: |
+        echo "Update manifests from origin/${DEFAULT_BRANCH}"
+        git fetch origin ${DEFAULT_BRANCH} --depth=1
+        git checkout "origin/${DEFAULT_BRANCH}" -- $(echo ${MANIFESTS_PATH} | tr ',' ' ')
+    - name: Bump version in YAML
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+        BUMP_VERSION_YAML_PATH: ${{ inputs.bump_version_yaml_path }}
+        BUMP_VERSION_YAML_KEY: ${{ inputs.bump_version_yaml_key }}
+        DOCKER_TAG_PREFIX: ${{ inputs.docker_tag_prefix }}
+        COMMIT_SHA: ${{ steps.set_attrs.outputs.commit_sha_short }}
+      run: |
+        echo 'Bump version in YAML'
+        sh "${ACTION_PATH}/bump_yaml.sh" \
+          "${BUMP_VERSION_YAML_PATH}" \
+          "${BUMP_VERSION_YAML_KEY}" \
+          "${DOCKER_TAG_PREFIX}${COMMIT_SHA}"
+    - name: Commit changes
+      shell: bash
+      id: commit
+      env:
+        COMMIT_MESSAGE_HEADER: ${{ steps.set_attrs.outputs.commit_message_header }}
+      run: |
+        echo "Committing changes"
+        git add ./
+
+        echo "diff_present=$(git diff-index --quiet HEAD; echo $?)" >> $GITHUB_OUTPUT
+        git diff-index --quiet HEAD || git commit -m "[auto] ${COMMIT_MESSAGE_HEADER}"
+    - name: Push changes
+      if: ${{ fromJson(inputs.push) && fromJson(steps.commit.outputs.diff_present) == 1 }}
+      shell: bash
+      env:
+        GITOPS_BRANCH: ${{ inputs.gitops_branch }}
+      run: |
+        echo "Pushing changes"
+        git push origin ${GITOPS_BRANCH}
+    - name: Set GHA summary
+      shell: bash
+      env:
+        DEFAULT_BRANCH: ${{ steps.set_attrs.outputs.default_branch }}
+        GITOPS_BRANCH: ${{ inputs.gitops_branch }}
+        DOCKER_TAG_PREFIX: ${{ inputs.docker_tag_prefix }}
+        COMMIT_SHA: ${{ steps.set_attrs.outputs.commit_sha_short }}
+      run: |
+        echo "Setting GitHub Actions summary"
+
+        if [ `git log -5 --format=%H | wc -l` -gt 1 ]; then
+          echo "GitOps branch \`${GITOPS_BRANCH}\` has been updated with the latest changes from \`origin/${DEFAULT_BRANCH}\`." >> $GITHUB_STEP_SUMMARY
+          echo "- New commit SHA: \`${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- New docker tag: \`${DOCKER_TAG_PREFIX}${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Diff with previous revision:" >> $GITHUB_STEP_SUMMARY
+          echo '```diff'  >> $GITHUB_STEP_SUMMARY
+          git diff "HEAD~1" "HEAD" -- >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        else
+          echo "GitOps branch \`${GITOPS_BRANCH}\` is already up to date"  >> $GITHUB_STEP_SUMMARY
+          echo "- Commit SHA: \`${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+          echo "- Docker tag: \`${DOCKER_TAG_PREFIX}${COMMIT_SHA}\`" >> $GITHUB_STEP_SUMMARY
+        fi
