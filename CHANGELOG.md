@@ -1,3 +1,13 @@
+## [v0.5.0] - 2026-05-20
+
+### Features
+
+- Add "Update GitOps" composite action (#52)
+
+[v0.4.0..v0.5.0](https://github.com/elastiflow/gha-reusable/compare/v0.4.0...v0.5.0)
+
+
+
 ## [v0.4.0] - 2026-05-08
 
 ### Features
