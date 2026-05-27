@@ -1,3 +1,13 @@
+## [v0.5.1] - 2026-05-27
+
+### Bug Fixes
+
+- Docker auth before build (#54)
+
+[v0.5.0..v0.5.1](https://github.com/elastiflow/gha-reusable/compare/v0.5.0...v0.5.1)
+
+
+
 ## [v0.5.0] - 2026-05-20
 
 ### Features
