@@ -25,6 +25,18 @@ inputs:
         build_args: |
           "SOME_DEP_VERSION=awesome-dependency:v1.1.1"
           "SOME_DEP_VERSION=awesome-dependency"
+  build_secrets:
+    description: |
+      "List of secrets to expose to the build (e.g., key=string, GIT_AUTH_TOKEN=mytoken)"
+
+        build_secrets: |
+          "SOME_SECRET=SOME_SECRET"
+  build_secret_envs:
+    description: |
+      "List of secret env vars to expose to the build (e.g., key=envname, MY_SECRET=MY_ENV_VAR)"
+
+        build_secret_envs: |
+          "SOME_SECRET=SOME_ENV_VAR"
   context:
     default: "."
     description: "Docker context"
@@ -94,6 +106,10 @@ runs:
         tags: "${{ inputs.registry }}/${{ inputs.image }}${{ case(inputs.tag != '', ':', '') }}${{ inputs.tag }}"
         build-args: |
             ${{ inputs.build_args }}
+        secrets: |
+            ${{ inputs.build_secrets }}
+        secret-envs: |
+            ${{ inputs.build_secret_envs }}
         target: ${{ inputs.target }}
         context: ${{ inputs.context }}
         cache-from: ${{ inputs.cache_from }}
