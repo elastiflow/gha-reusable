@@ -120,7 +120,7 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
       - name: Build in Docker
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         if: ${{ !inputs.gcp_ar_registry_cache_enabled }}
         with:
           file: ${{ inputs.build_dockerfile }}
@@ -140,7 +140,7 @@ jobs:
             "gpg_key=${{ secrets.build_gpg_key }}"
             "gpg_passphrase=${{ secrets.build_gpg_passphrase }}"
       - name: Build in Docker with GCP AR cache
-        uses: docker/build-push-action@d08e5c354a6adb9ed34480a06d141179aa583294 # v7.0.0
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         if: ${{ inputs.gcp_ar_registry_cache_enabled }}
         with:
           file: ${{ inputs.build_dockerfile }}
