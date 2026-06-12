@@ -1,3 +1,13 @@
+## [v0.6.0] - 2026-06-12
+
+### Features
+
+- Ability to use secrets in docker build (#58)
+
+[v0.5.1..v0.6.0](https://github.com/elastiflow/gha-reusable/compare/v0.5.1...v0.6.0)
+
+
+
 ## [v0.5.1] - 2026-05-27
 
 ### Bug Fixes
