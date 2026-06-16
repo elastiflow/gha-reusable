@@ -1,3 +1,13 @@
+## [v0.7.0] - 2026-06-16
+
+### Features
+
+- Reusable workflow for multi-platform docker builds (#73)
+
+[v0.6.0..v0.7.0](https://github.com/elastiflow/gha-reusable/compare/v0.6.0...v0.7.0)
+
+
+
 ## [v0.6.0] - 2026-06-12
 
 ### Features
