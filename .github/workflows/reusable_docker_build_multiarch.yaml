@@ -1,0 +1,613 @@
+on:
+  workflow_call:
+    inputs:
+      timeout_minutes:
+        type: number
+        default: 60
+        description: "Workflow jobs timeout in minutes"
+      runners:
+        type: string
+        required: true
+        description: |
+          Runners to execute the build on, in json format. E.g.:
+          ```json
+            ["ubuntu-latest-4c", "ubuntu-latest-arm-4c"]
+          ```
+      targets:
+        type: string
+        required: true
+        description: |
+          Docker targets to build, in json format. E.g.:
+          ```json
+            ["runner", "runner-debug"]
+          ```
+      runner_platform_map:
+        type: string
+        required: true
+        description: |
+          Runner to Docker build platform mapping in JSON format.
+          Currently only supports linux/amd64 and linux/arm64 platforms.
+          Example:
+          ```json
+            {
+              "ubuntu-latest-4c": "linux/amd64",
+              "ubuntu-latest-arm-4c": "linux/arm64"
+            }
+          ```
+      tag:
+        type: string
+        required: true
+        description: |
+          Tag to apply to the built image.
+      build_args:
+        type: string
+        description: |
+          Docker build args, example:
+
+            build_args: |
+              "SOME_DEP_VERSION=awesome-dependency:v1.1.1"
+              "SOME_DEP_VERSION=awesome-dependency"
+      build_secret_envs:
+        type: string
+        description: |
+          "List of secret env vars to expose to the build (e.g., key=envname, MY_SECRET=MY_ENV_VAR)"
+
+            build_secret_envs: |
+              "SOME_SECRET=SOME_ENV_VAR"
+      # Opinionated build secrets
+      build_secret_npm_gcp:
+        type: boolean
+        default: false
+        description: |
+          Whether to configure GCP Artifact Registry credentials for NPM registry read access during the build.
+      build_secret_npm_gcp_key:
+        type: string
+        default: "NPM_TOKEN"
+        description: |
+          Docker build secret key to use to inject GCP credentials into the build.
+      build_secret_npm_gcp_project_id:
+        type: string
+        description: |
+          GCP project id for the service account used to authenticate to GCP for NPM read access, must be provided if `build_secret_npm_gcp` is true.
+      build_secret_npm_gcp_workload_identity_provider:
+        type: string
+        description: |
+          GCP workload identity provider for the service account used to authenticate to GCP for NPM read access, must be provided if `build_secret_npm_gcp` is true.
+      build_secret_npm_gcp_service_account:
+        type: string
+        description: |
+          GCP service account email used to authenticate to GCP for NPM read access, must be provided if `build_secret_npm_gcp` is true.
+      # Docker cache attrs
+      cache_image:
+        type: string
+        required: true
+        description: |
+          Image name to use for build cache.
+      cache_registry:
+        type: string
+        required: true
+        description: |
+          Registry to use for build cache.
+      cache_registry_provider:
+        type: string
+        required: true
+        description: |
+          Registry provider to use for build cache.
+          Currently supported values are "aws", "gcp"
+      cache_registry_region:
+        type: string
+        description: |
+          Region of the registry to use for build cache, if applicable.
+      # AWS attrs
+      aws_push:
+        type: boolean
+        default: false
+        description: |
+          Whether to push the built image to AWS ECR.
+      aws_image:
+        type: string
+        description: |
+          Name of the image to build/push to AWS ECR, must be provided if `aws_push` is true.
+      aws_registry:
+        type: string
+        description: |
+          AWS ECR registry (account_id.dkr.ecr.region.amazonaws.com) to push, must be provided if `aws_push` is true.
+      aws_region:
+        type: string
+        default: us-east-2
+        description: |
+          AWS region where the ECR registry is located, must be provided if `aws_push` is true or `cache_registry_provider` is 'aws'.
+      aws_iam_role:
+        type: string
+        description: |
+          AWS IAM role to assume for pushing to ECR, must be provided if `aws_push` is true or `cache_registry_provider` is 'aws'.
+          - IAM role must have access to the `${aws_registry}/${aws_image}`
+          - IAM role must have access to the `${cache_registry}/${cache_image}` if `cache_registry_provider` is 'aws'
+      aws_token_lifetime:
+        type: string
+        default: "3600"
+        description: |
+          AWS IAM role token lifetime in seconds
+      # GCP attrs
+      gcp_push:
+        type: boolean
+        default: false
+        description: |
+          Whether to push the built image to GCP Artifact Registry.
+      gcp_image:
+        type: string
+        description: |
+          Name of the image to build/push to GCP Artifact Registry, must be provided if `gcp_push` is true.
+      gcp_registry:
+        type: string
+        description: |
+          GCP Artifact Registry hostname (e.g. region-docker.pkg.dev) to push, must be provided if `gcp_push` is true.
+      gcp_project_id:
+        type: string
+        description: "GCP Artifact Registry project"
+      gcp_workload_identity_provider:
+        type: string
+        description: "GCP Artifact Registry workload identity provider id (with numeric project id)"
+      gcp_service_account:
+        type: string
+        description: |
+          GCP Artifact Registry service account
+          - Service Account must have access to the `${registry}/${gcp_image}`
+          - Service Account must have access to the `${cache_registry}/${cache_image}` if `cache_registry_provider` is 'gcp'
+      gcp_token_lifetime:
+        type: string
+        default: "3600s"
+        description: |
+          GCP Service Account token lifetime
+      # Github Container Registry attrs
+      ghcr_push:
+        type: boolean
+        default: false
+        description: |
+          Whether to push the built image to GitHub Container Registry.
+      ghcr_image:
+        type: string
+        description: |
+          Name of the image to build/push to GitHub Container Registry, must be provided if `ghcr_push` is true. Should be in the format of `owner/repo/image`.
+      ghcr_registry:
+        type: string
+        default: ghcr.io
+        description: |
+          GitHub Container Registry hostname.
+      # Dockerhub attrs
+      dockerhub_push:
+        type: boolean
+        default: false
+        description: |
+          Whether to push the built image to Dockerhub.
+      dockerhub_image:
+        type: string
+        description: |
+          Name of the image to build/push to Dockerhub, must be provided if `dockerhub_push` is true. Should be in the format of `owner/repo/image`.
+      dockerhub_registry:
+        type: string
+        default: docker.io
+        description: |
+          Dockerhub hostname.
+    secrets:
+      build_secrets:
+        description: |
+          "List of secrets to expose to the build (e.g., key=string, GIT_AUTH_TOKEN=mytoken)"
+
+            build_secrets: |
+              "SOME_SECRET=SOME_SECRET"
+      dockerhub_username:
+        description: Dockerhub username, must be provided if `dockerhub_push` is true.
+      dockerhub_api_token:
+        description: Dockerhub API token, must be provided if `dockerhub_push` is true.
+    outputs:
+      tag:
+        description: "Docker tag that was built/pushed"
+        value: ${{ inputs.tag }}
+
+
+jobs:
+  docker_build_push:
+    name: Docker build/push
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: ${{ inputs.timeout_minutes }}
+    strategy:
+      matrix:
+        runner: ${{ fromJson(inputs.runners) }}
+        target: ${{ fromJson(inputs.targets) }}
+    env:
+      RUNNER_PLATFORM_MAP: ${{ inputs.runner_platform_map }}
+      MATRIX_TARGET: ${{ matrix.target }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Normalize cache tag
+        id: cache_tag
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          echo "ref_name=$(echo ${REF_NAME} | tr '/' '_')" >> $GITHUB_OUTPUT
+          echo "arch=$(echo ${{ fromJson(env.RUNNER_PLATFORM_MAP)[matrix.runner] }} | tr '/' '_')" >> $GITHUB_OUTPUT
+
+      # Opinionated list of temporary secrets to be used within the build process
+      - name: Configure GCP Credentials (NPM read)
+        if: ${{ inputs.build_secret_npm_gcp }}
+        id: build_secret_npm_gcp
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          token_format: "access_token"
+          create_credentials_file: false
+          export_environment_variables: false
+          project_id: ${{ inputs.build_secret_npm_gcp_project_id }}
+          workload_identity_provider: ${{ inputs.build_secret_npm_gcp_workload_identity_provider }}
+          service_account: ${{ inputs.build_secret_npm_gcp_service_account }}
+
+      # Configure caching registry creds
+      ## AWS ECR
+      - name: Configure AWS Credentials (cache)
+        if: ${{ inputs.cache_registry_provider == 'aws' }}
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        with:
+          aws-region: ${{ inputs.cache_registry_region }}
+          role-to-assume: ${{ inputs.aws_iam_role }}
+          role-duration-seconds: ${{ inputs.aws_token_lifetime }}
+      - name: Login to Amazon ECR (cache)
+        if: ${{ inputs.cache_registry_provider == 'aws' }}
+        uses: aws-actions/amazon-ecr-login@19d944daaa35f0fa1d3f7f8af1d3f2e5de25c5b7 # v2.1.4
+      ## GCP Artifact Registry
+      - name: Configure GCP Credentials (cache)
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        if: ${{ inputs.cache_registry_provider == 'gcp' }}
+        id: gcp_ar_auth_cache
+        with:
+          token_format: "access_token"
+          project_id: ${{ inputs.gcp_project_id }}
+          workload_identity_provider: ${{ inputs.gcp_workload_identity_provider }}
+          service_account: ${{ inputs.gcp_service_account }}
+          access_token_lifetime: ${{ inputs.gcp_token_lifetime }}
+      - name: Login to GCP AR (cache)
+        if: ${{ inputs.cache_registry_provider == 'gcp' }}
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ${{ inputs.cache_registry }}
+          username: oauth2accesstoken
+          password: ${{ steps.gcp_ar_auth_cache.outputs.access_token }}
+      - name: Build/push docker image cache
+        uses: elastiflow/gha-reusable/actions/docker-build-push@v0
+        with:
+          registry: local
+          image: "local"
+          # Must set the tag to empty string for the "push-by-digest" to work
+          tag: ""
+          outputs: type=image,name=cache
+          build_args: |
+              ${{ inputs.build_args }}
+          build_secrets: &build_secrets |
+              ${{ case(inputs.build_secret_npm_gcp, format('{0}={1}', inputs.build_secret_npm_gcp_key, steps.build_secret_npm_gcp.outputs.access_token), '') }}
+              ${{ secrets.build_secrets }}
+          build_secret_envs: |
+              ${{ inputs.build_secret_envs }}
+          platforms: ${{ fromJson(env.RUNNER_PLATFORM_MAP)[matrix.runner] }}
+          target: ${{ matrix.target }}
+          cache_from: &build_cache_from |
+            type=registry,ref=${{ inputs.cache_registry }}/${{ inputs.cache_image }}:${{ steps.cache_tag.outputs.ref_name }}-${{ steps.cache_tag.outputs.arch }}
+            type=registry,ref=${{ inputs.cache_registry }}/${{ inputs.cache_image }}:alpha-${{ steps.cache_tag.outputs.arch }}
+            type=registry,ref=${{ inputs.cache_registry }}/${{ inputs.cache_image }}:beta-${{ steps.cache_tag.outputs.arch }}
+            type=registry,ref=${{ inputs.cache_registry }}/${{ inputs.cache_image }}:main-${{ steps.cache_tag.outputs.arch }}
+          cache_to: &build_cache_to |
+            type=registry,ref=${{ inputs.cache_registry }}/${{ inputs.cache_image }}:${{ steps.cache_tag.outputs.ref_name }}-${{ steps.cache_tag.outputs.arch }},mode=max
+          provenance: ""
+          sbom: "false"
+
+      # Build/push to AWS ECR
+      - name: Configure AWS Credentials
+        if: ${{ inputs.aws_push }}
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        with:
+          aws-region: ${{ inputs.aws_region }}
+          role-to-assume: ${{ inputs.aws_iam_role }}
+          role-duration-seconds: ${{ inputs.aws_token_lifetime }}
+      - name: Login to Amazon ECR
+        if: ${{ inputs.aws_push }}
+        uses: aws-actions/amazon-ecr-login@19d944daaa35f0fa1d3f7f8af1d3f2e5de25c5b7 # v2.1.4
+      - name: Build/push docker image ECR
+        id: build_push_aws
+        if: ${{ inputs.aws_push }}
+        uses: elastiflow/gha-reusable/actions/docker-build-push@v0
+        with:
+          registry: ${{ inputs.aws_registry }}
+          image: ${{ inputs.aws_image }}
+          # Must set the tag to empty string for the "push-by-digest" to work
+          tag: ""
+          push_attestation: true
+          outputs: push-by-digest=true,type=image,push=true
+          build_args: |
+              ${{ inputs.build_args }}
+          build_secrets: *build_secrets
+          build_secret_envs: |
+              ${{ inputs.build_secret_envs }}
+          platforms: ${{ fromJson(env.RUNNER_PLATFORM_MAP)[matrix.runner] }}
+          target: ${{ matrix.target }}
+          cache_from: *build_cache_from
+          cache_to: *build_cache_to
+      - name: Save build metadata AWS
+        if: ${{ inputs.aws_push }}
+        env:
+          CLOUD: aws
+          DIGEST: ${{ steps.build_push_aws.outputs.digest }}
+          METADATA: ${{ steps.build_push_aws.outputs.metadata }}
+        run: &save_build_metadata |
+          cat > /tmp/digest_${MATRIX_TARGET}_${{ steps.cache_tag.outputs.arch }}_${CLOUD}.txt <<- EOF
+            ${DIGEST}
+          EOF
+          cat > /tmp/metadata_${MATRIX_TARGET}_${{ steps.cache_tag.outputs.arch }}_${CLOUD}.json <<- EOF
+            ${METADATA}
+          EOF
+
+      # Build/push to GCP Artifact Registry
+      - name: Configure GCP Credentials
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        if: ${{ inputs.gcp_push }}
+        id: gcp_ar_auth
+        with:
+          token_format: "access_token"
+          project_id: ${{ inputs.gcp_project_id }}
+          workload_identity_provider: ${{ inputs.gcp_workload_identity_provider }}
+          service_account: ${{ inputs.gcp_service_account }}
+          access_token_lifetime: ${{ inputs.gcp_token_lifetime }}
+      - name: Login to GCP AR
+        if: ${{ inputs.gcp_push }}
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ${{ inputs.gcp_registry }}
+          username: oauth2accesstoken
+          password: ${{ steps.gcp_ar_auth.outputs.access_token }}
+      - name: Build/push docker image GCP AR
+        id: build_push_gcp
+        if: ${{ inputs.gcp_push }}
+        uses: elastiflow/gha-reusable/actions/docker-build-push@v0
+        with:
+          registry: ${{ inputs.gcp_registry }}
+          image: ${{ inputs.gcp_image }}
+          # Must set the tag to empty string for the "push-by-digest" to work
+          tag: ""
+          push_attestation: true
+          outputs: push-by-digest=true,type=image,push=true
+          build_args: |
+              ${{ inputs.build_args }}
+          build_secrets: *build_secrets
+          build_secret_envs: |
+              ${{ inputs.build_secret_envs }}
+          platforms: ${{ fromJson(env.RUNNER_PLATFORM_MAP)[matrix.runner] }}
+          target: ${{ matrix.target }}
+          cache_from: *build_cache_from
+          cache_to: *build_cache_to
+      - name: Save build metadata GCP
+        if: ${{ inputs.gcp_push }}
+        env:
+          CLOUD: gcp
+          DIGEST: ${{ steps.build_push_gcp.outputs.digest }}
+          METADATA: ${{ steps.build_push_gcp.outputs.metadata }}
+        run: *save_build_metadata
+
+      # Build/Push to GitHub Container Registry
+      - name: Build/push docker image GHCR
+        id: build_push_ghcr
+        if: ${{ inputs.ghcr_push }}
+        uses: elastiflow/gha-reusable/actions/docker-build-push@v0
+        with:
+          registry: ${{ inputs.ghcr_registry }}
+          image: ${{ inputs.ghcr_image }}
+          # Must set the tag to empty string for the "push-by-digest" to work
+          tag: ""
+          push_attestation: true
+          outputs: push-by-digest=true,type=image,push=true
+          build_args: |
+              ${{ inputs.build_args }}
+          build_secrets: *build_secrets
+          build_secret_envs: |
+              ${{ inputs.build_secret_envs }}
+          platforms: ${{ fromJson(env.RUNNER_PLATFORM_MAP)[matrix.runner] }}
+          target: ${{ matrix.target }}
+          cache_from: *build_cache_from
+          cache_to: *build_cache_to
+          registry_username: ${{ github.actor }}
+          registry_password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Save build metadata GHCR
+        if: ${{ inputs.ghcr_push }}
+        env:
+          CLOUD: ghcr
+          DIGEST: ${{ steps.build_push_ghcr.outputs.digest }}
+          METADATA: ${{ steps.build_push_ghcr.outputs.metadata }}
+        run: *save_build_metadata
+
+      # Build/Push to Dockerhub
+      - name: Build/push docker image Dockerhub
+        id: build_push_dockerhub
+        if: ${{ inputs.dockerhub_push }}
+        uses: elastiflow/gha-reusable/actions/docker-build-push@v0
+        with:
+          registry: ${{ inputs.dockerhub_registry }}
+          image: ${{ inputs.dockerhub_image }}
+          # Must set the tag to empty string for the "push-by-digest" to work
+          tag: ""
+          push_attestation: true
+          outputs: push-by-digest=true,type=image,push=true
+          build_args: |
+              ${{ inputs.build_args }}
+          build_secrets: *build_secrets
+          build_secret_envs: |
+              ${{ inputs.build_secret_envs }}
+          platforms: ${{ fromJson(env.RUNNER_PLATFORM_MAP)[matrix.runner] }}
+          target: ${{ matrix.target }}
+          cache_from: *build_cache_from
+          cache_to: *build_cache_to
+          registry_username: ${{ secrets.dockerhub_username }}
+          registry_password: ${{ secrets.dockerhub_api_token }}
+      - name: Save build metadata Dockerhub
+        if: ${{ inputs.dockerhub_push }}
+        env:
+          CLOUD: dockerhub
+          DIGEST: ${{ steps.build_push_dockerhub.outputs.digest }}
+          METADATA: ${{ steps.build_push_dockerhub.outputs.metadata }}
+        run: *save_build_metadata
+
+      # Misc
+      - name: Upload build metadata
+        if: &push_enabled >-
+          ${{
+            inputs.aws_push
+            || inputs.dockerhub_push
+            || inputs.gcp_push
+            || inputs.ghcr_push
+          }}
+        # if: ${{ fromJson(steps.build_push_aws.outputs.digest) || fromJson(steps.build_push_gcp.outputs.digest) || fromJson(steps.build_push_ghcr.outputs.digest) || fromJson(steps.build_push_dockerhub.outputs.digest) }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ${{ matrix.target }}_${{ steps.cache_tag.outputs.arch }}
+          path: |
+            /tmp/digest_*.txt
+            /tmp/metadata_*.json
+
+  push_multiarch:
+    name: Push multi-arch docker manifest
+    runs-on: ubuntu-latest
+    needs: [docker_build_push]
+    if: *push_enabled
+    strategy:
+      matrix:
+        target: ${{ fromJson(inputs.targets) }}
+    steps:
+      - name: Download build metadata
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          path: /tmp/
+
+      # Build/Push to AWS ECR
+      - name: Configure AWS Credentials
+        if: ${{ inputs.aws_push }}
+        uses: aws-actions/configure-aws-credentials@ec61189d14ec14c8efccab744f656cffd0e33f37 # v6.1.0
+        with:
+          aws-region: ${{ inputs.aws_region }}
+          role-to-assume: ${{ inputs.aws_iam_role }}
+      - name: Login to Amazon ECR
+        if: ${{ inputs.aws_push }}
+        uses: aws-actions/amazon-ecr-login@19d944daaa35f0fa1d3f7f8af1d3f2e5de25c5b7 # v2.1.4
+      - name: Compose multi-arch image ECR
+        if: ${{ inputs.aws_push }}
+        id: compose_image_aws
+        env:
+          MATRIX_TARGET: ${{ matrix.target }}
+          IMAGE: ${{ inputs.aws_registry }}/${{ inputs.aws_image }}
+          FULL_IMAGE: ${{ inputs.aws_registry }}/${{ inputs.aws_image }}:${{ inputs.tag }}
+          CLOUD: aws
+        run: &compose_multiarch |
+          echo "## ${CLOUD}" >> $GITHUB_STEP_SUMMARY
+          SRC_IMAGES=$(ls /tmp/${MATRIX_TARGET}*/digest_${MATRIX_TARGET}*_${CLOUD}.txt | while read -r i; do echo ${IMAGE}@$(cat ${i} | tr -d ' '); done)
+
+          echo "Composing multi-arch image ${FULL_IMAGE}"
+
+          docker buildx imagetools create \
+            -t ${FULL_IMAGE} \
+            $(echo ${SRC_IMAGES} | tr '\n' ' ')
+          export DIGEST=$(docker buildx imagetools inspect ${FULL_IMAGE} | grep -E '^Digest' | awk '{print $NF}')
+
+          echo "Composed \`${FULL_IMAGE}\` from images" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "${SRC_IMAGES}" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          echo "Digest: \`${DIGEST}\`" >> $GITHUB_STEP_SUMMARY
+
+          echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
+      - name: Generate artifact attestation AWS
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        if: ${{ inputs.aws_push }}
+        with:
+          subject-name: "${{ inputs.aws_registry }}/${{ inputs.aws_image }}"
+          subject-digest: ${{ steps.compose_image_aws.outputs.digest }}
+          push-to-registry: true
+
+      # Build/push to GCP Artifact Registry
+      - name: Configure GCP Credentials
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        if: ${{ inputs.gcp_push }}
+        id: gcp_ar_auth
+        with:
+          token_format: "access_token"
+          project_id: ${{ inputs.gcp_project_id }}
+          workload_identity_provider: ${{ inputs.gcp_workload_identity_provider }}
+          service_account: ${{ inputs.gcp_service_account }}
+          access_token_lifetime: ${{ inputs.gcp_token_lifetime }}
+      - name: Login to GCP AR
+        if: ${{ inputs.gcp_push }}
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ${{ inputs.gcp_registry }}
+          username: oauth2accesstoken
+          password: ${{ steps.gcp_ar_auth.outputs.access_token }}
+      - name: Compose multi-arch image GCP
+        if: ${{ inputs.gcp_push }}
+        id: compose_image_gcp
+        env:
+          MATRIX_TARGET: ${{ matrix.target }}
+          IMAGE: ${{ inputs.gcp_registry }}/${{ inputs.gcp_image }}
+          FULL_IMAGE: ${{ inputs.gcp_registry }}/${{ inputs.gcp_image }}:${{ inputs.tag }}
+          CLOUD: gcp
+        run: *compose_multiarch
+      - name: Generate artifact attestation GCP
+        if: ${{ inputs.gcp_push }}
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-name: "${{ inputs.gcp_registry }}/${{ inputs.gcp_image }}"
+          subject-digest: ${{ steps.compose_image_gcp.outputs.digest }}
+          push-to-registry: true
+
+      # Build/push to GHCR
+      - name: Login to GHCR
+        if: ${{ inputs.ghcr_push }}
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ${{ inputs.ghcr_registry }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Compose multi-arch image GHCR
+        if: ${{ inputs.ghcr_push }}
+        id: compose_image_ghcr
+        env:
+          MATRIX_TARGET: ${{ matrix.target }}
+          IMAGE: ${{ inputs.ghcr_registry }}/${{ inputs.ghcr_image }}
+          FULL_IMAGE: ${{ inputs.ghcr_registry }}/${{ inputs.ghcr_image }}:${{ inputs.tag }}
+          CLOUD: ghcr
+        run: *compose_multiarch
+      - name: Generate artifact attestation GHCR
+        if: ${{ inputs.ghcr_push }}
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-name: "${{ inputs.ghcr_registry }}/${{ inputs.ghcr_image }}"
+          subject-digest: ${{ steps.compose_image_ghcr.outputs.digest }}
+          push-to-registry: true
+
+      # Build/push to Dockerhub
+      - name: Login to Dockerhub
+        if: ${{ inputs.dockerhub_push }}
+        uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
+        with:
+          registry: ${{ inputs.dockerhub_registry }}
+          username: ${{ secrets.dockerhub_username }}
+          password: ${{ secrets.dockerhub_api_token }}
+      - name: Compose multi-arch image Dockerhub
+        if: ${{ inputs.dockerhub_push }}
+        id: compose_image_dockerhub
+        env:
+          MATRIX_TARGET: ${{ matrix.target }}
+          IMAGE: ${{ inputs.dockerhub_registry }}/${{ inputs.dockerhub_image }}
+          FULL_IMAGE: ${{ inputs.dockerhub_registry }}/${{ inputs.dockerhub_image }}:${{ inputs.tag }}
+          CLOUD: dockerhub
+        run: *compose_multiarch
+      - name: Generate artifact attestation Dockerhub
+        if: ${{ inputs.dockerhub_push }}
+        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        with:
+          subject-name: "${{ inputs.dockerhub_registry }}/${{ inputs.dockerhub_image }}"
+          subject-digest: ${{ steps.compose_image_dockerhub.outputs.digest }}
+          push-to-registry: true
