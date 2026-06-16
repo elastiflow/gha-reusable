@@ -473,6 +473,13 @@ jobs:
     name: Push multi-arch docker manifest
     runs-on: ubuntu-latest
     needs: [docker_build_push]
+    if: >-
+      ${{
+        inputs.aws_push
+        || inputs.dockerhub_push
+        || inputs.gcp_push
+        || inputs.ghcr_push
+      }}
     strategy:
       matrix:
         target: ${{ fromJson(inputs.targets) }}
