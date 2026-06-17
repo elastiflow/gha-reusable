@@ -1,3 +1,13 @@
+## [v0.7.1] - 2026-06-17
+
+### Bug Fixes
+
+- Simplify the "PR checks" workflow (#75)
+
+[v0.7.0..v0.7.1](https://github.com/elastiflow/gha-reusable/compare/v0.7.0...v0.7.1)
+
+
+
 ## [v0.7.0] - 2026-06-16
 
 ### Features
