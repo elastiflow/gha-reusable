@@ -1,3 +1,13 @@
+## [v0.7.2] - 2026-06-30
+
+### Bug Fixes
+
+-  error (#77)
+
+[v0.7.1..v0.7.2](https://github.com/elastiflow/gha-reusable/compare/v0.7.1...v0.7.2)
+
+
+
 ## [v0.7.1] - 2026-06-17
 
 ### Bug Fixes
