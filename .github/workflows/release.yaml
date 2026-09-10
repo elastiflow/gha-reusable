@@ -46,6 +46,8 @@ jobs:
           fetch-depth: 0
       - name: Prepare Release
         id: prepare_release
+        # Internal action, no need to pin
+        # nosemgrep: github-actions-mutable-action-tag
         uses: elastiflow/gha-reusable/actions/prepare-release@v0
         with:
           tag_prefix: "${{ env.TAG_PREFIX }}"
@@ -86,6 +88,8 @@ jobs:
           fetch-depth: 0
       - name: Prepare Release
         id: prepare_release
+        # Internal action, no need to pin
+        # nosemgrep: github-actions-mutable-action-tag
         uses: elastiflow/gha-reusable/actions/prepare-release@v0
         with:
           tag_prefix: "${{ env.TAG_PREFIX }}"
