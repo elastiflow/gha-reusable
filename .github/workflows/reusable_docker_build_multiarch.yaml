@@ -320,7 +320,7 @@ jobs:
           role-duration-seconds: ${{ inputs.aws_token_lifetime }}
       - name: Login to Amazon ECR (cache)
         if: ${{ inputs.cache_storage == 'aws_ecr' }}
-        uses: aws-actions/amazon-ecr-login@19d944daaa35f0fa1d3f7f8af1d3f2e5de25c5b7 # v2.1.4
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
       ## Cache GCP Artifact Registry
       - name: Configure GCP Credentials (cache)
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -351,7 +351,7 @@ jobs:
           role-duration-seconds: ${{ inputs.aws_token_lifetime }}
       - name: Login to Amazon ECR
         if: ${{ inputs.aws_push }}
-        uses: aws-actions/amazon-ecr-login@19d944daaa35f0fa1d3f7f8af1d3f2e5de25c5b7 # v2.1.4
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
       ## Login to GCP Artifact Registry
       - name: Configure GCP Credentials
         uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
@@ -464,7 +464,7 @@ jobs:
           role-to-assume: ${{ inputs.aws_iam_role }}
       - name: Login to Amazon ECR
         if: ${{ inputs.aws_push }}
-        uses: aws-actions/amazon-ecr-login@19d944daaa35f0fa1d3f7f8af1d3f2e5de25c5b7 # v2.1.4
+        uses: aws-actions/amazon-ecr-login@03f1aad4c6c7ffd436567f42f9384779290529bd # v2.1.7
       - name: Compose multi-arch image ECR
         if: ${{ inputs.aws_push }}
         id: compose_image_aws
