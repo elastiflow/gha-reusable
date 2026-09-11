@@ -1,3 +1,13 @@
+## [v0.8.0] - 2026-09-11
+
+### Features
+
+- S3 as a caching storage for multi-arch docker build (#85)
+
+[v0.7.2..v0.8.0](https://github.com/elastiflow/gha-reusable/compare/v0.7.2...v0.8.0)
+
+
+
 ## [v0.7.2] - 2026-06-30
 
 ### Bug Fixes
