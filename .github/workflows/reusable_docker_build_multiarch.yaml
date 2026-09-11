@@ -492,7 +492,7 @@ jobs:
 
           echo "digest=${DIGEST}" >> $GITHUB_OUTPUT
       - name: Generate artifact attestation AWS
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         if: ${{ inputs.aws_push }}
         with:
           subject-name: "${{ inputs.aws_registry }}/${{ inputs.aws_image }}"
@@ -528,7 +528,7 @@ jobs:
         run: *compose_multiarch
       - name: Generate artifact attestation GCP
         if: ${{ inputs.gcp_push }}
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: "${{ inputs.gcp_registry }}/${{ inputs.gcp_image }}"
           subject-digest: ${{ steps.compose_image_gcp.outputs.digest }}
@@ -553,7 +553,7 @@ jobs:
         run: *compose_multiarch
       - name: Generate artifact attestation GHCR
         if: ${{ inputs.ghcr_push }}
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: "${{ inputs.ghcr_registry }}/${{ inputs.ghcr_image }}"
           subject-digest: ${{ steps.compose_image_ghcr.outputs.digest }}
@@ -578,7 +578,7 @@ jobs:
         run: *compose_multiarch
       - name: Generate artifact attestation Dockerhub
         if: ${{ inputs.dockerhub_push }}
-        uses: actions/attest@59d89421af93a897026c735860bf21b6eb4f7b26 # v4.1.0
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
         with:
           subject-name: "${{ inputs.dockerhub_registry }}/${{ inputs.dockerhub_image }}"
           subject-digest: ${{ steps.compose_image_dockerhub.outputs.digest }}
