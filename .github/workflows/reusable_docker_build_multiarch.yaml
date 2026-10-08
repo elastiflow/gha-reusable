@@ -243,6 +243,11 @@ on:
         default: false
         description: |
           Whether to push the built image to Dockerhub.
+      dockerhub_login:
+        type: boolean
+        default: false
+        description: |
+          Whether to login to Dockerhub, useful to avoid rate limits when pulling images.
       dockerhub_image:
         type: string
         description: |
@@ -381,7 +386,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       ## Login to Dockerhub Container Registry
       - name: Login to Dockerhub Container Registry
-        if: ${{ inputs.dockerhub_push }}
+        if: ${{ inputs.dockerhub_push || inputs.dockerhub_login }}
         uses: docker/login-action@650006c6eb7dba73a995cc03b0b2d7f5ca915bee # v4.2.0
         with:
           registry: ${{ inputs.dockerhub_registry }}
