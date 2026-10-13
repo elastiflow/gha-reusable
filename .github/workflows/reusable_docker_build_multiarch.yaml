@@ -104,6 +104,12 @@ on:
         type: string
         description: |
           GCP service account email used to authenticate to GCP for NPM read access, must be provided if `build_secret_npm_gcp` is true.
+      build_source_date_epoch:
+        type: string
+        default: "1791913716"
+        description: |
+          Source date epoch to use for reproducible builds, https://docs.docker.com/build/ci/github-actions/reproducible-builds/
+          Default jus just a random timestamp.
       # Docker cache attrs
       cache_storage:
         type: string
@@ -295,7 +301,6 @@ jobs:
         run: |
           echo "ref_name=$(echo ${REF_NAME} | tr '/' '_')" >> $GITHUB_OUTPUT
           echo "arch=$(echo ${PLATFORM} | tr '/' '_')" >> $GITHUB_OUTPUT
-          echo "commit_timestamp=$(git log -1 --pretty=%ct)" >> $GITHUB_OUTPUT
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5 # v4.1.0
       - name: Extract metadata (tags, labels) for Docker
@@ -398,7 +403,7 @@ jobs:
         id: build_push
         uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf # v7.2.0
         env:
-          SOURCE_DATE_EPOCH: ${{ steps.standard_vars.outputs.commit_timestamp }}
+          SOURCE_DATE_EPOCH: ${{ inputs.build_source_date_epoch }}
         with:
           file: ${{ inputs.dockerfile }}
           platforms: ${{ fromJson(inputs.runner_platform_map)[matrix.runner] }}
