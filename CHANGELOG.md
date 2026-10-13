@@ -1,3 +1,14 @@
+## [v0.8.1] - 2026-10-08
+
+### Bug Fixes
+
+- Add  env var to multi-arch docker build (#87)
+- Optional DockerHub Login (#89)
+
+[v0.8.0..v0.8.1](https://github.com/elastiflow/gha-reusable/compare/v0.8.0...v0.8.1)
+
+
+
 ## [v0.8.0] - 2026-09-11
 
 ### Features
