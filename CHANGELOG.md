@@ -1,3 +1,13 @@
+## [v0.8.2] - 2026-10-13
+
+### Bug Fixes
+
+- Allow setting  in multi-arch build (#90)
+
+[v0.8.1..v0.8.2](https://github.com/elastiflow/gha-reusable/compare/v0.8.1...v0.8.2)
+
+
+
 ## [v0.8.1] - 2026-10-08
 
 ### Bug Fixes
