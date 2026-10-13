@@ -109,7 +109,7 @@ on:
         default: "1791913716"
         description: |
           Source date epoch to use for reproducible builds, https://docs.docker.com/build/ci/github-actions/reproducible-builds/
-          Default jus just a random timestamp.
+          Default is just a random timestamp.
       # Docker cache attrs
       cache_storage:
         type: string
