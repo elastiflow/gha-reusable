@@ -2,7 +2,7 @@
 
 ### Bug Fixes
 
-- Set  to 0 as a default (#92)
+- Set `SOURCE_DATE_EPOCH` to 0 as a default (#92)
 
 [v0.8.2..v0.8.3](https://github.com/elastiflow/gha-reusable/compare/v0.8.2...v0.8.3)
 
