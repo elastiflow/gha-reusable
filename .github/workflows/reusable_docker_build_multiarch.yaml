@@ -106,7 +106,7 @@ on:
           GCP service account email used to authenticate to GCP for NPM read access, must be provided if `build_secret_npm_gcp` is true.
       build_source_date_epoch:
         type: string
-        default: "1791913716"
+        default: "0"
         description: |
           Unix timestamp to use as `SOURCE_DATE_EPOCH` for reproducible builds, https://docs.docker.com/build/ci/github-actions/reproducible-builds/
           Default is just a random timestamp.
