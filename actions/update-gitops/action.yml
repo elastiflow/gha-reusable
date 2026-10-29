@@ -1,6 +1,9 @@
 name: 'Update GitOps'
 description: 'Update manifests in the GitOps branch'
 inputs:
+  new_version:
+    default: ""
+    description: "New version, can be either a commit SHA, short SHA or a git tag. Usually `github.sha` or `github.ref_name`, latest commit of the `default_branch` otherwise"
   default_branch:
     default: ""
     description: "Default branch to update from, e.g. main. If not set (empty string), it will be determined automatically."
@@ -63,13 +66,19 @@ runs:
       shell: bash
       env:
         DEFAULT_BRANCH: ${{ case(inputs.default_branch == '', steps.set_default_branch.outputs.default_branch, inputs.default_branch) }}
+        NEW_VERSION: ${{ inputs.new_version }}
       run: |
         echo "Setting attributes"
         git fetch origin ${DEFAULT_BRANCH} --depth=1
 
         echo "default_branch=${DEFAULT_BRANCH}" >> $GITHUB_OUTPUT
-        echo "commit_sha_short=$(git rev-parse --short origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
-        echo "commit_message_header=$(git log -1 --pretty=%s origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
+        if ! [[ -z ${NEW_VERSION} ]]; then
+          echo "commit_sha_short=$(git rev-parse --short ${NEW_VERSION})" >> $GITHUB_OUTPUT
+          echo "commit_message_header=$(git log -1 --pretty=%s ${NEW_VERSION})" >> $GITHUB_OUTPUT
+        else
+          echo "commit_sha_short=$(git rev-parse --short origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
+          echo "commit_message_header=$(git log -1 --pretty=%s origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
+        fi
     - name: Checkout GitOps branch
       uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
