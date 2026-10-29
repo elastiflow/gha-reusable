@@ -4,6 +4,9 @@ inputs:
   new_version:
     default: ""
     description: "New version, can be either a commit SHA, short SHA or a git tag. Usually `github.sha` or `github.ref_name`, latest commit of the `default_branch` otherwise"
+  short_sha_length:
+    default: "8"
+    description: "Length of the short SHA to use"
   default_branch:
     default: ""
     description: "Default branch to update from, e.g. main. If not set (empty string), it will be determined automatically."
@@ -69,6 +72,7 @@ runs:
       env:
         DEFAULT_BRANCH: ${{ case(inputs.default_branch == '', steps.set_default_branch.outputs.default_branch, inputs.default_branch) }}
         NEW_VERSION: ${{ inputs.new_version }}
+        SHORT_SHA_LENGTH: ${{ inputs.short_sha_length }}
       run: |
         echo "Setting attributes"
         git fetch origin ${DEFAULT_BRANCH} --depth=1
@@ -77,15 +81,15 @@ runs:
         if ! [[ -z ${NEW_VERSION} ]]; then
           git fetch --unshallow --all
           git fetch origin --tags
-
-          commit_sha_short=$(git rev-parse --short "${NEW_VERSION}^{commit}")
-          commit_message_header=$(git log -1 --pretty=%s "${NEW_VERSION}")
-          echo "commit_sha_short=${commit_sha_short}" >> "$GITHUB_OUTPUT"
-          echo "commit_message_header=${commit_message_header}" >> "$GITHUB_OUTPUT"
+          commit_sha=$(git rev-parse "${NEW_VERSION}^{commit}")
         else
-          echo "commit_sha_short=$(git rev-parse --short origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
-          echo "commit_message_header=$(git log -1 --pretty=%s origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
+          commit_sha=$(git rev-parse "origin/${DEFAULT_BRANCH}^{commit}")
         fi
+
+        commit_sha_short=${commit_sha:0:${SHORT_SHA_LENGTH}}
+        commit_message_header=$(git log -1 --pretty=%s "${commit_sha}")
+        echo "commit_sha_short=${commit_sha_short}" >> "$GITHUB_OUTPUT"
+        echo "commit_message_header=${commit_message_header}" >> "$GITHUB_OUTPUT"
     - name: Checkout GitOps branch
       uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
       with:
