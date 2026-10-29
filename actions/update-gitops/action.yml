@@ -47,6 +47,8 @@ runs:
   using: "composite"
   steps:
     - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+      with:
+        persist-credentials: true
     - name: Configure git
       shell: bash
       env:
@@ -69,12 +71,14 @@ runs:
         NEW_VERSION: ${{ inputs.new_version }}
       run: |
         echo "Setting attributes"
-        git fetch origin ${DEFAULT_BRANCH} --depth=1
+        git fetch origin --tags
 
         echo "default_branch=${DEFAULT_BRANCH}" >> $GITHUB_OUTPUT
         if ! [[ -z ${NEW_VERSION} ]]; then
-          echo "commit_sha_short=$(git rev-parse --short ${NEW_VERSION})" >> $GITHUB_OUTPUT
-          echo "commit_message_header=$(git log -1 --pretty=%s ${NEW_VERSION})" >> $GITHUB_OUTPUT
+          commit_sha_short=$(git rev-parse --short "${NEW_VERSION}^{commit}")
+          commit_message_header=$(git log -1 --pretty=%s "${NEW_VERSION}")
+          echo "commit_sha_short=${commit_sha_short}" >> "$GITHUB_OUTPUT"
+          echo "commit_message_header=${commit_message_header}" >> "$GITHUB_OUTPUT"
         else
           echo "commit_sha_short=$(git rev-parse --short origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
           echo "commit_message_header=$(git log -1 --pretty=%s origin/${DEFAULT_BRANCH})" >> $GITHUB_OUTPUT
