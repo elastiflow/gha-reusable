@@ -1,3 +1,13 @@
+## [v0.8.4] - 2026-10-29
+
+### Bug Fixes
+
+- Allow defining  in the  action (#94)
+
+[v0.8.3..v0.8.4](https://github.com/elastiflow/gha-reusable/compare/v0.8.3...v0.8.4)
+
+
+
 ## [v0.8.3] - 2026-10-19
 
 ### Bug Fixes
