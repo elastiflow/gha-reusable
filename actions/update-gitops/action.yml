@@ -75,7 +75,6 @@ runs:
 
         echo "default_branch=${DEFAULT_BRANCH}" >> $GITHUB_OUTPUT
         if ! [[ -z ${NEW_VERSION} ]]; then
-          git config remote.origin.fetch "+refs/heads/*:refs/remotes/origin/*"
           git fetch --unshallow --all
           git fetch origin --tags
 
