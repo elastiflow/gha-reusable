@@ -7,7 +7,9 @@ Composite GitHub Action that syncs manifest files into a GitOps branch and bumps
 1. Detects (or accepts) the default branch.
 2. Checks out the GitOps branch.
 3. Copies the specified manifest file(s) from the default branch into the GitOps branch.
-4. Updates a version key in one or more YAML files using the short commit SHA.
+4. Updates a version key in one or more YAML files using
+   1. The latest short commit SHA.
+   2. The short commit SHA of the `new_version`
 5. Commits and optionally pushes the changes.
 6. Adds the GHA status with new commit and diff
 
